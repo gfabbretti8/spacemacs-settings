@@ -1,0 +1,1704 @@
+% This is samplepaper.tex, a sample chapter demonstrating the
+% LLNCS macro package for Springer Computer Science proceedings;
+% Version 2.20 of 2017/10/04
+%
+\documentclass[runningheads]{llncs}
+%
+
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{thmtools}
+\usepackage{thm-restate}
+\usepackage{cleveref}
+\usepackage{url}
+\usepackage{color}
+\newcommand{\system}{{\mathcal S}}
+
+\newcommand{\sslash}{\mathbin{\mkern-4mu \backslash \mkern-6mu \backslash \mkern-4mu}}
+\newcommand{\ignore}[1]{}
+\newcommand{\proj}{del}
+\newcommand{\rep}{\mathit{addLog}} 
+\newcommand{\projc}{uctrl} 
+\newcommand{\length}{length} 
+\newcommand{\too}{\longrightarrow}  
+\newcommand{\arro}[1]{\xrightarrow{#1}}  
+\newcommand{\hoo}{\hookrightarrow}  
+\newcommand{\del}{\ms{del}} 
+\newcommand{\rolldel}{\ms{rolldel}}  
+\newcommand{\comp}{\:|\:} 
+\newcommand{\instarro}[1]{\stackrel{#1}{\hoo}}  
+\newcommand{\instarrow}[1]{\stackrel{#1}{\rh}} 
+\newcommand{\linstarrow}[1]{\stackrel{#1}{\lh}} 
+\newcommand{\rfpair}[2]{(#1,#2)} 
+\newcommand{\conf}[3]{\rfpair{#1}{#2}-#3}
+\newcommand{\set}[1]{\{#1\}}
+\newcommand{\ms}[1]{\mathsf{#1}}
+\newcommand{\mr}[1]{\mathrm{#1}}
+\newcommand{\ul}[1]{\underline{#1}}
+\newcommand{\lh}{\leftharpoondown} 
+\newcommand{\rh}{\rightharpoonup}
+\newcommand{\sqll}{\mbox{$\lceil\hspace{-.5ex}\lceil$}} 
+\newcommand{\sqrr}{\mbox{$\rceil\hspace{-.4ex}\rceil$}} 
+
+\newcommand{\red}[1]{\textcolor{red}{#1}}
+
+\def\res{\mathrel{\vert\grave{ }}} 
+\let\l=\langle 
+\let\r=\rangle 
+\def \tuple#1{\langle #1 \rangle}
+
+
+% Terms 
+ 
+\newcommand{\dom}{{\mathcal{D}om}} 
+\newcommand{\cT}{{\mathcal{T}}} 
+\newcommand{\nat}{\mbox{$I\!\!N$}} 
+\newcommand{\nill}{[\:]} 
+\newcommand{\nil}{()} 
+\newcommand{\ol}[1]{\overline{#1}}
+
+ 
+% New symbols: 
+%\newcommand{\cons}{\!:\!} 
+\newcommand{\cons}{\mbox{$+$}} 
+ 
+% Arrows 
+ 
+\newcommand{\lto}{\longrightarrow} 
+\newcommand{\hto}{~\hookrightarrow} 
+\newcommand{\gn}{\rightsquigarrow} 
+ 
+ 
+\long\def\comment#1{}
+
+ 
+% Used for displaying a sample figure. If possible, figure files should 
+% be included in EPS format. 
+% 
+% If you use the hyperref package, please uncomment the following line 
+% to display URLs in blue roman font according to Springer's eBook style: 
+% \renewcommand\UrlFont{\color{blue}\rmfamily} 
+ 
+\begin{document} 
+% 
+\title{Causal-Consistent Debugging of\\ Distributed Erlang Programs\thanks{The work has been partially supported by French ANR project DCore
+    ANR-18-CE25-0007. The second author has also been partially supported by INdAM -- GNCS 2020 project \emph{Sistemi Reversibili Concorrenti: dai Modelli ai Linguaggi}.}
+} 
+% 
+%\titlerunning{Abbreviated paper title} 
+% If the paper title is too long for the running head, you can set 
+% an abbreviated paper title here 
+% 
+\author{Giovanni Fabbretti\inst{1} \and 
+Ivan Lanese\inst{2} \and 
+Jean-Bernard Stefani\inst{1}} 
+% 
+\authorrunning{G. Fabbretti et al.}
+% First names are abbreviated in the running head.
+% If there are more than two authors, 'et al.' is used.
+%
+\institute{Spades Team, Univ. of Grenoble Alpes, INRIA, 38000 Grenoble, France 
+			\and Focus Team, Univ. of Bologna, INRIA, 40137 Bologna, Italy }
+%
+\maketitle % typeset the header of the contribution 
+%
+\begin{abstract}
+	
+Debugging concurrent programs is an interesting application of reversibility.
+It has been renewed with the recent proposal by Giachino et al.\
+to base a concurrent debugger operations on a causal-consistent reversible semantics,
+and subsequent work on CauDEr, a causal-consistent debugger for the Erlang programming language.
+% Erlang is a functional language for concurrent and distributed
+% programming based on the actor model. CauDEr is a
+% causal-consistent debugger for a functional and concurrent fragment of
+% Erlang. Here, causal-consistent means that any action can be undone,
+% provided that its consequences, if any, have been undone before.
+% Hence, CauDEr allows one to explore a concurrent computation back and
+% forth, as well as to undo an action far in the past, including all and
+% only its consequences.
+This paper extends CauDEr and the related theory with the support for
+distributed programs. Our extension allows one to debug
+programs in which processes can run on different nodes, and new nodes
+can be created at runtime. From the theoretical point of view, the
+primitives for distributed programming give rise to more complex
+causal structures than those arising from the concurrent fragment of Erlang handled in CauDEr, 
+yet we show that the main results proved for CauDEr still hold. 
+From the practical point of view, we show how to
+use our extension of CauDEr to find a non trivial bug in a simple
+way.
+
+%Moreover, since it is not realistic to expect the user to
+%undo each step singularly we introduce a rollback operator able to undo several steps at the time
+%in an automatic manner, while ensuring causal consistency. Thanks to the rollback
+%operator, the user can select a past state of the system, by selecting a past action
+%performed by one of the processes, and then the debugger automatically undoes
+%all the actions that are a consequence of the user's request and finally the
+%user's request itself.
+%We prove relevant properties of the debugger, e.g., that it is indeed causal-consistent. We also show the practical
+%
+%Lastly, we present the extended version of the debugger and a use case where we
+%show how CauDEr can be used and how it simplifies the research of a bug that
+%otherwise it is not trivial to detect.
+\keywords{Debugging \and Actor model  \and Distributed computation \and Reversible computing}
+\end{abstract}
+%
+%
+%
+\section{Introduction}
+
+Debugging concurrent programs is an interesting application of reversibility. 
+A reversible debugger allows one to explore a program execution by going forward -- letting the program execute normally --,
+or backward -- rolling back the program execution by undoing the effect of past executed instructions. 
+Several works have explored this idea in the past, see, e.g., the survey in~\cite{Engblom12}, and reversible debugging is used in mainstream tools as well~\cite{microsoft}.
+It is only recently, however, that the idea of a causal-consistent debugger has been proposed by Giachino et al.~in~\cite{GiachinoLM14}.
+The key idea in~\cite{GiachinoLM14} was to base the debugger primitives on a causal-consistent reversible semantics for 
+the target programming language. 
+Causal consistency, introduced by Danos and Krivine in their seminal work on reversible CCS~\cite{DanosK04},
+allows one, in reversing a concurrent execution, to undo any event provided that its consequences, if any, are undone first.
+%following any linearisation of the inverse causal order of their 
+%occurrence.
+On top of a causal-consistent semantics one can define a rollback operator~\cite{LaneseMSS11} to undo an arbitrary action. It provides a minimality guarantee, useful to explore concurrent programs 
+which are prone to state explosion, in that only events in the causal future of a target one are undone,
+and not events that are causally independent but which may have been interleaved in the execution.
+
+The CauDEr debugger \cite{LNPV18,Gonzalez-AbrilV21,Cauder} builds on these ideas and provides a reversible debugger for 
+a core subset of the Erlang programming language
+\cite{book:erlang}. Erlang is interesting for it mixes functional programming with a concurrency model
+inspired by actors \cite{Agha86Book}, and has been largely applied since its initial uses by Ericsson\footnote{erlang-solutions.com/blog/which-companies-are-using-erlang-and-why-mytopdogstatus.html}, 
+to build distributed infrastructures.
+
+% A reversible debugger tackles this problem by
+% saving internally each state of the computation, while this one proceeds forward,
+% and then eventually uses such information to travel back through past states.
+% More precisely, a reversible debugger implements a forward
+% semantics, which defines the behaviour of the forward computation and specifies
+% which information must be saved, and a backward semantics, which defines the behaviour of the program during the
+% backward execution. The forward and backward semantics together form the
+% reversible semantics.
+%
+% Such a tool can be particularly helpful while developing
+% concurrent and distributed programs, indeed, this kind of paradigms are
+% well-known for their intrinsic difficulty, due to the fact that one has to focus
+% both on every single process' behaviour and on all the possible interleavings.
+% The notion of reversibility we use is called \emph{causal consistent}~\cite{DanosK04,Lanese14,PhillipsU07}. More notably, causal consistency implies that we can undo an action if and only if \emph{all of its consequences}, if any, have been undone beforehand.
+%
+% Here, we consider the Erlang programming language \cite{book:erlang}, a functional, concurrent and distributed programming language that uses the actor model \cite{paper:actor-model}.
+% Erlang has been created by Ericsson in 1986 and since then has been used by many famous companies, such as Nintendo, Vocalink (a Mastercard company), Goldman Sachs, AdRoll\footnote{erlang-solutions.com/blog/which-companies-are-using-erlang-and-why-mytopdogstatus.html}, to build their distributed infrastructure.
+
+This paper presents an extension of CauDEr to take into account distribution primitives which are not part of the 
+core subset of Erlang handled by CauDEr. Specifically,
+%, in addition of the core subset handled by CauDEr,
+we additionally consider the three Erlang primitives called 
+$\ms{start}$, to create a new node for executing Erlang processes,
+$\ms{node}$, to retrieve the name of the current node, and 
+$\ms{nodes}$, which allows the current process to obtain a list of all the currently active nodes in an Erlang system.
+We also extend the $\ms{spawn}$ primitive handled by CauDEr to take as additional parameter the node on which to create a new Erlang process.
+
+Adding support for these primitives is non trivial for they introduce causal dependencies in Erlang programs
+that are different than those originating from the functional and concurrent
+fragment considered in CauDEr, which covers only message passing and process creation on the current node.
+Indeed, the set of nodes acts as a shared set variable that can be read, checked for membership, and extended with new elements.
+Interestingly, the causal dependencies induced by this shared set cannot be faithfully represented in the general model
+for reversing languages introduced in~\cite{LaneseM20}, which allows for resources that can only be produced and
+consumed.
+
+The contributions of the current work are therefore as follows: 
+(i) we extend the reversible semantics for the core subset of the Erlang language used by CauDEr with the above distribution primitives;
+(ii) we present a rollback semantics that underlies primitives in our extended CauDEr debugger;
+(iii) we have implemented an extension of the CauDEr debugger that handles Erlang programs written in our distributed fragment of the language;
+(iv) we illustrate on an example how our CauDEr extension can be used in capturing subtle bugs in distributed Erlang programs.
+Due to space constraints, we do not detail in this paper our extended CauDEr implementation, but the code is publicly available in the dedicated GitHub repository~\cite{DistCauder}.
+
+The rest of this paper is organized as follows.
+Section~\ref{sec:background} briefly recalls the reversible semantics on which CauDER is based \cite{LaneseNPV18}.
+Section~\ref{sec:semantics} presents the Erlang distributed language fragment we consider in our CauDEr extension, 
+its reversible semantics and the corresponding rollback semantics.
+Section~\ref{sec:dist-cauder} briefly describes our extension to CauDEr,
+and presents an example that illustrates bug finding in distributed Erlang programs with our extended CauDEr.
+Section~\ref{sec:related} discusses related work and concludes the paper with hints for future work.
+Proofs and further technical details are available in the appendix.
+
+% The work presented in this paper is an extension of CauDEr, a reversible debugger for Erlang, and its reversible semantics have been presented.
+% CauDEr's reversible semantics concerns the causal dependencies caused
+% by message passing and by aspects of concurrent programming (e.g., spawns of
+% processes).
+%
+% The present paper brings the following \textbf{contribution}: adds the support
+% for distribution to the reversible semantics, made possible by
+% introducing three primitives, $\ms{start}$ to create a new node (defined in the
+% 'slave' module, part of the STDLIB),
+% $\ms{node}$, to retrieve the name of the local node, and $\ms{nodes}$
+% to obtain the set of existing nodes. In addition, primitive
+% $\ms{spawn}$, to create a new process, now takes an additional
+% parameter, namely the node on which the process has to be
+% spawned. Support for these primitives has been added on the semantics level
+% (Section~\ref{sec:semantics}), both in the reversible semantics as well as in the
+% rollback one, where the last one is the one that allows to undo several steps in an automatic
+% manner, while being causally consistent. The rollback semantics that we present here is an
+% adaptation to our case of the one presented in \cite{LaneseNPV18-replay}.
+%
+% Finally, we also add support for the three primitives in
+% CauDEr-v2~\cite{Gonzalez-AbrilV21} (Section~\ref{sec:dist-cauder}), a reversible
+% debugger based on the theory in~\cite{LaneseNPV18}.
+%
+% A main challenge of this extension is provided by the fact that these
+% primitives produce causal dependencies different from the ones of the
+% functional and concurrent fragment, since the set of nodes acts as a
+% shared set variable that can be read, extended with further elements
+% and checked for membership. In particular, such a causality relation
+% cannot be faithfully represented in the general model
+% in~\cite{LaneseM20}, which only allows for resources produced and
+% consumed.
+
+%The rest of the paper is organised as follow.\\
+%Section 2 briefly resumes the work done in \cite{LaneseNPV18}, by discussing the reversible semantics and by providing few examples.\\
+%Section 3 discusses the extended semantics, which includes the functions for distributed computing and presents a new rollback operator.\\
+%Section 4 presents a proof-of-concept of the debugger and an example of how to use it.\\
+%Section 5 discusses related works, which have either inspired this work or which have elements in common.\\
+%Lastly, in section 6 we discuss possible future developments, how CauDEr can be improved and which are other directions that we believe are worth being investigated.\\
+% All the code discussed in this paper is publicly available at the following GitHub repository: \url{https://github.com/gfabbretti8/cauder-v2.git}
+
+
+
+\section{Background}\label{sec:background}
+
+%In this work we extend the reversible semantics for Erlang
+%in~\cite{LaneseNPV18}. It is obtained starting from a reduction
+%semantics for Erlang composed by two layers, one for expressions and
+%one for systems. On top of these a forward and a backward semantics
+%are defined.
+We recall here the main aspects of the language in~\cite{LaneseNPV18}, as needed to understand our extension.
+We refer the interested reader to \cite{LaneseNPV18} for further details. 
+ 
+\subsection{The language syntax}
+
+\begin{figure}[t]
+\centering
+  $
+  \begin{array}{rcl@{~~~}rcl}
+    \mathit{module} & ::= & \mathit{fun}_1~\ldots~\mathit{fun}_n \\%&
+    {\mathit{fun}} & ::= & \mathit{fname} = \ms{fun}~(X_1,\ldots,X_n) \to expr \\
+    {\mathit{fname}} & ::= & Atom/Integer \\%&
+    lit & ::= & Atom \mid Integer \mid Float \mid [\:] \\
+    expr & ::= & \multicolumn{4}{l}{\mathit{Var} \mid lit \mid \mathit{fname} \mid [expr_1|expr_2]
+                 \mid   \{expr_1,\ldots,expr_n\}} \\
+    & \mid & \multicolumn{4}{l}{\ms{call}~expr~(expr_1,\ldots,expr_n) 
+    \mid \ms{apply}~expr~(expr_1,\ldots,expr_n)} \\
+    & \mid &
+    \multicolumn{4}{l}{\ms{case}~expr~\ms{of}~clause_1;\ldots;clause_m~\ms{end}}\\
+    & \mid & \multicolumn{4}{l}{\ms{let}~\mathit{Var}=expr_1~\ms{in}~expr_2 
+    \mid \ms{receive}~clause_1;\ldots;clause_n~\ms{end}}\\
+    & \mid & \multicolumn{4}{l}{\ms{spawn}(expr,[expr_1,\ldots,expr_n])  
+     \mid expr_1 \:!\: expr_2 \mid \ms{self}()}\\
+    clause & ::= & pat ~\ms{when}~expr_1 \to expr_2
+    \\%&
+    pat & ::= & \mathit{Var} \mid lit \mid [pat_1|pat_2] \mid
+    \{pat_1,\ldots,pat_n\} \\
+  \end{array}
+  $
+\caption{Language syntax} 
+\label{fig:lang-syntax}
+\end{figure}
+
+Fig.~\ref{fig:lang-syntax} shows the language syntax. The language depicted is a fragment of Core Erlang~\cite{core}, an intermediate step in Erlang compilation. A module is a collection of function definitions, a function is a mapping between the function name and the function expression. An expression can be a variable, a literal, a function name, a list, a tuple, a call to a built-in function, a function application, a case expression, a let binding. An expression can also be a $\ms{spawn}$, a $\ms{send}$, a $\ms{receive}$, or a $\ms{self}$, which are built-in functions. Finally, in this language we distinguish expressions, patterns and variables. Here, patterns are built from variables, tuples, lists and literals, while values are built from literals, tuples and lists, i.e., they are ground patterns.
+When we have a $\ms{case}~e~\ms{of} \ldots$ expression we first evaluate $e$ to a value, say $v$, then we search for a clause that matches $v$. When one is found, if the guard $\ms{when}~expr$ is satisfied then the $\ms{case}$ construct evaluates to the clause expression, otherwise the search continues with the next clause. The $\ms{let}~X=~expr_1~\ms{in}~expr_2$ expression binds inside $expr_2$ the fresh variable $X$ to the value to which $expr_1$ reduces.
+
+As for the concurrent features, since Erlang implements the actor model, there is no shared memory. An Erlang system is a pool of processes that interact by exchanging messages. Each process is uniquely identified by its pid and has its own queue of incoming messages. Function $\ms{spawn}~(expr, [expr_1, \ldots, expr_n])$ evaluates to a fresh process pid $p$.
+As a side-effect, it creates a new process with pid $p$. Process $p$ will apply the function to which $expr$ evaluates to the arguments to which the expressions $expr_1, \ldots, expr_n$ evaluate.
+As in \cite{LaneseNPV18}, we assume that the only way to introduce a new pid is through the evaluation of a spawn. Then, $expr_1~!~expr_2$ allows a process to send a message to another one. Expression $expr_1$ must evaluate to a pid (identifying the receiver process) and $expr_2$ evaluates to the content of the message, say $v$. The whole function evaluates to $v$ and, as a side-effect, the message will eventually be stored in the receiver queue. The counterpart of message sending is $\ms{receive}~clause_1, \ldots, clause_n~\ms{end}$. This construct traverses the queue of messages searching for the first message $v$ that matches one of the $n$ clauses. If no message is found then the process suspends. Finally, $\ms{self}$ evaluates to the current process pid.
+%This function is usually used when we want to include in a message the sender pid so that the receiver can eventually reply to the message.
+
+\subsection{The language semantics}
+
+This subsection provides key elements to understand the CauDEr semantics.
+%and describes the expression
+%semantics. We omit the system semantics since it is very similar to
+%the forward reversible semantics.
+We start with the definition of process.
+
+\begin{definition}[Process]\label{def:proc}
+A \emph{process} is denoted by a tuple $\l p, \theta, e, q \r$, where $p$ is the process' pid, $\theta$ is an environment, i.e.\ a map from variables to their actual value, $e$ is the current expression to evaluate, and $q$ is the queue of messages received by the process.
+
+Two operations are allowed on queues: $v:q$ denotes the addition of a new message on top of the queue and $q \sslash v$ denotes the queue $q$ after removing $v$ (note that $v$ may not be the first message). 
+\end{definition}
+
+A (running) system can be seen as a pool of running processes.
+
+\begin{definition}[System]
+A \emph{system} is denoted by the tuple $\Gamma; \Pi$. The \emph{global mailbox} $\Gamma$ is a multiset of pairs of the form $(target\_process\_pid,~message)$, where a message is stored after being sent and before being scheduled to its receiver. $\Pi$ is the \emph{pool of processes}, denoted by an expression of the form 
+\[ \l p_1, \theta_1, e_1, q_1 \r \comp \ldots \comp \l p_n, \theta_n, e_n, q_n \r\]
+where $"|"$ is an associative and commutative operator.
+$\Gamma \cup \{(p,v)\}$, where $\cup$ is multiset union, is the global mailbox obtained by adding the pair $(p,v)$ to $\Gamma$.
+We write $p \in \Gamma; \Pi$ when $\Pi$ contains a process with pid $p$.
+\end{definition}
+
+We highlight a process $p$ in a system by writing $\Gamma; \l p, \theta,e, q\r \comp \Pi$.
+The presence of the global mailbox $\Gamma$, which is similar to the "ether" in \cite{unif-sem-erl}, allows one to simulate all the possible interleavings of messages. Indeed, in this semantics the order of the messages exchanged between two processes belonging to the same runtime may not be respected, differently from what happens in current Erlang implementations. See~\cite{unif-sem-erl} for a discussion on this design choice.
+
+The semantics in~\cite{LaneseNPV18} is defined in a modular way, similarly to the one presented in \cite{paper:distributed-erlang-sem}, i.e., there is a semantics for the expression level and one for the system level. This approach simplifies the design of the reversible semantics since only the system one needs to be updated. The expression semantics is defined as a labelled transition relation of the form:
+\[ \{Env,Expr\} \times Label \times \{Env, Expr\} \]
+where $Env$ represents the environment, i.e., a substitution, and $Expr$ denotes the expression, while $Label$ is an element of the following set: 
+\[\{\tau, \ms{send}(v_1,v_2), \ms{rec}(\kappa, \overline{cl_n}),
+  \ms{spawn}(\kappa, a/n, [\overline{v_n}]), \ms{self}(\kappa)\}\]
+The semantics, described in Appendix~\ref{app:expr-sem} due to space constraints, is a classical call-by-value semantics for a first order language.
+Label $\tau$ denotes the evaluation of a (sequential) expression without side-effects, like the evaluation of a $\ms{case}$ expression or a $\ms{let}$ binding.
+The remaining labels denote a side-effect associated to the rule execution or the request of some needed information. The system semantics will use the label to execute the associated side-effect or to provide the necessary information. More precisely, in label $\ms{send}(v_1,v_2)$, $v_1$ and $v_2$ represent the pid of the sender and the value of a message. In label $\ms{rec}(\kappa, \overline{cl_n})$, $\ol{cl_n}$ denotes the $n$ clauses of a
+$\ms{receive}$ expression. Inside label $\ms{spawn}(\kappa, a/n, [\overline{v_n}])$, $a/n$ represents the function
+name, while $[\overline{v_n}]$ is the (possibly empty) list of arguments of the function. Where used, $\kappa$
+acts as a future: the expression evaluates to $\kappa$, then the
+corresponding system rule replaces it with its actual value.
+
+For space reasons, we do not show here the system rules, which are available in Appendix~\ref{app:sys-sem}. We will however show in
+the next section how sample rules are extended to support
+reversibility.
+
+%, while rules $\ms{rec}(\kappa, \overline{cl_n}), \ms{spawn}(\kappa, a/n, [\overline{v_n}])$ and $ \ms{self}(\kappa)$ belong to the second set, i.e., rules that we do not locally know to what they evaluate.
+
+\subsection{A reversible semantics}
+
+The reversible semantics is composed by two relations: a \emph{forward} relation $\rh$ and a \emph{backward} relation $\lh$.
+The forward reversible semantics is a natural extension of the
+system semantics by using a typical \emph{Landauer embedding}~\cite{Landauer}.
+The idea underlying Landauer's work is that any formalism or programming
+language can be made reversible by adding the \emph{history} of the computation at
+each state. Hence, this semantics at each step saves in an external device,
+called history, the previous state of the computation so that later on such a
+state can be restored. The backward semantics allows us to
+undo a step while ensuring causal consistency~\cite{DanosK04,Lanese14}, indeed
+before undoing an action we must ensure that all its consequences have been
+undone beforehand.
+
+In the reversible semantics each message exchanged must be uniquely identified
+in order to allow one to undo the sending of the "right" message, hence we denote messages with the tuple $\{\lambda, v\}$, where
+$\lambda$ is the unique identifier and $v$ the message body. See~\cite{LaneseNPV18} for a discussion on this design choice.
+
+Due to the Landauer embedding the notion of process is extended as follows.
+
+\begin{definition}[Process]\label{def:rev-proc}
+  A process is denoted by a tuple $\l p, h, \theta, e, q \r$, where $h$ is the \emph{history} of the process. The other elements are as in Def.~\ref{def:proc}. The expression $\ms{op}(\ldots): h$ denotes the history $h$ with a new history item added on top.
+The generic history item $\ms{op}(\ldots)$ can span over the following set.
+\[ \{ \tau(\theta, e), \ms{send}(\theta, e, \{\lambda, v\}), \ms{rec}(\theta, e, \{\lambda, v\}, q), \ms{spawn}(\theta, e, p), \ms{self}(\theta, e)\}\]
+\end{definition}
+
+
+Here, each history item carries the information needed to restore the
+previous state of the computation. For rules that do not cause causal
+dependencies (i.e., $\tau$ and $\ms{self}$) it is enough to save $\theta$ and
+$e$. For the other rules we must carry additional information to
+check that every consequence has been undone before restoring the previous state.
+We refer to \cite{LaneseNPV18} for further details.
+%Let us consider the following example.
+%
+
+
+
+\begin{figure}[t]
+	$
+	\begin{array}{r@{~~}c}
+		
+	(\mathit{Spawn}) & {\displaystyle
+  	\frac{\theta,e \arro{\ms{spawn}(\kappa, a/n, [\overline{v_n}])}\theta',e'~~~p'\text{ is a fresh identifier}}
+  	{\begin{array}{l@{~}l}
+   	\Gamma; \tuple{p, \red{h}, \theta, e, q} \comp \Pi \rh \Gamma; \tuple{p, \red{\ms{spawn}(\theta,e, p'): h}, \theta',e'\{\kappa \mapsto p'\}, q}\\
+  	  \hspace{25ex}\comp \tuple{p', \red{\nill}, id,\ms{apply}~a/n (\overline{v_n}), \nill } \comp \Pi
+  	\end{array}
+  	}}\\[6ex]
+  
+		
+	(\mathit{\overline{Spawn}}) & {\displaystyle
+    \Gamma; \l p, \ms{spawn}(\theta,e,p'):h,\theta',e',q \r \comp \l p', \nill, id,e'',\nill \r \comp \Pi 
+  	\lh
+  	\Gamma; \l p, h,\theta,e,q \r \comp \Pi} \\[4ex] 
+  	
+	\end{array}
+	$
+	\caption{An example of a rule belonging to the forward semantics and its counterpart.}
+	\label{fig:rev-sem}
+\end{figure}
+
+
+Fig.~\ref{fig:rev-sem} shows a sample rule from the forward semantics (additions w.r.t.~the standard system rule are highlighted in red) and its counterpart from the backward semantics. In the premises of the rule $Spawn$ we can see the expression-level semantics in action, transitioning from the configuration $(\theta, e)$ to $(\theta', e')$ and the corresponding label that the forward semantics uses to determine the associated side-effect. When rule $Spawn$ is applied the system transits in a new state where process $p'$ is added to the pool of processes and the history of process $p$ is enriched with the corresponding history item. Finally, the forward semantics takes care of updating the value of the future $\kappa$ by substituting it with the pid $p'$ of the new process.
+
+The reverse rule, $\overline{Spawn}$, can be applied only when all the consequences of the spawn, namely every action performed by the spawned process $p'$, have been undone.
+Such constraint is enforced by the fact that the history of the spawned process must be empty.
+Since the last history item of $p$ is the $\ms{spawn}$, and thanks to the assumption that every new pid, except for the first process, is introduced by evaluating a $\ms{spawn}$, we can be sure that there are no pending messages for $p'$. Then, if the history is empty, we can proceed to remove the process $p'$ from $\Pi$ and we can restore $p$ to the previous state.
+
+\section{Distributed Reversible Semantics for Erlang}\label{sec:semantics}
+
+In this section we discuss how the syntax and the reversible semantics introduced in the previous section have been updated to tackle the three distribution primitives $\ms{start,node}$ and $\ms{nodes}$.
+%and we will present only the rules concerning the distributed aspects. Again, we invite the reader interested to know more about the rules concerning the concurrent aspects to refer to \cite{LaneseNPV18}.
+Lastly, we extend the rollback operator introduced in \cite{LaneseNPV18,LanesePV21} to support distribution.
+
+\subsection{Distributed System Semantics}
+
+
+The updated syntax is like the one in Fig.~\ref{fig:lang-syntax},
+with the only difference that now $expr$ can also be $\ms{start}(e), \ms{node}()$
+and $\ms{nodes}()$,
+%hence is of the form
+%$expr=\ldots|~start(e)~|~node()~|~nodes()$,
+and $\ms{spawn}$ takes an extra argument
+that represents the node where the new process must be spawned.
+
+%Now an expression can also be a $\ms{start}, \ms{node}$ or a $\ms{nodes}$, moreover the $\ms{spawn}$ now takes four arguments,  instead of three, where the first one represents the node where the process must be spawned. 
+
+Let us now briefly discuss the semantics of the new primitives. First, in
+function $\ms{start}$, $e$ must evaluate to a node name, which is an atom of
+the form 'name@host'. Then, the function, as a side-effect, starts a new node, provided that no node with the same name exists in the network,
+and evaluates to the node name in case of success or to an error in case of
+failure. Node names, contrarily to pids which are always generated fresh, can be hardcoded, as it usually happens in Erlang. Also, function
+$\ms{node}$ evaluates to the local node name. Finally, function $\ms{nodes}$
+evaluates to the list (possibly empty) of nodes to which the executing node is connected. Here, we assume that each node has an atomic view of the network, therefore we do not consider network partitioning. 
+
+%\subsection{The distributed system semantics}
+
+Notions of process and system are updated to cope with the extension above.
+
+\begin{definition}[Process]
+	A process is denoted by a tuple $\l nid, p, \theta, e, q \r$, where $nid$
+  denotes the id of the node on which the process is running. For the other elements of the tuple the reader can refer to Def.~\ref{def:proc}.
+\end{definition}
+	
+The updated definitions of node and network follow.
+
+\begin{definition}[Node and network]
+  A \emph{node} is a pool of processes. A node is identified by an atom of
+  the form $name@host$, called a \emph{nid}. A \emph{network}, denoted by $\Omega$,
+  is a set of nids. Hence, nids in a network should all be distinct.
+\end{definition}  
+%  Although there is no limit on the number of nodes that a single
+%  machine can host, the convention is that there is only one node per
+%  physical machine.
+
+Now, we can proceed to give the formal definition of a distributed system.
+
+\begin{definition}[Distributed system]
+  A \emph{distributed system} is a tuple $\Gamma;\Pi;\Omega$. The global mailbox $\Gamma$ and the pool of running processes $\Pi$ are as before (but processes now include a nid).
+  Instead, $\Omega$ represents the set of nodes connected to the network. We will use $\cup$ to denote set union.
+\end{definition}
+
+
+%Fig.~\ref{fig:ex-sys-semantics} depicts the extended system semantics. We can observe that there are rules to evaluate the distributed functions and in particular we have two rules for the evaluation of the function $\ms{start}$. Indeed, we apply rule $StartS$ when the start of the node is successful and we apply rule $StartF$ when the start of the node is not successful. In a real system a $\ms{start}$ can fail for many reasons, in our system a start can only fail because the node is already part of the network. Moreover, we have two rules for the evaluation of the function $\ms{spawn}$. Indeed, while in \cite{LaneseNPV18} there was only one rule for the evaluation of the spawn, the one depicted in Fig.~\ref{fig:rev-sem}, here by adding the notion of node we also added the possibility for a spawn to fail. More precisely, a $\ms{spawn}$ fails when the node, fed as first argument, is not part of $\Omega$.
+%
+%
+%
+%
+%\begin{figure}
+%\centering
+%\small
+%  $
+%	\begin{array}{c}
+%  
+%	\displaystyle
+%	
+%	\mathit{(Seq)}
+%	\frac{\theta,e\xrightarrow{\tau}\theta',e'}
+%	{\Gamma;\l node, p,(\theta,e),q\r \comp \Pi; \Omega \hoo \Gamma;\l node, p,(\theta',e'),q\r \comp \Pi; \Omega}\\[4ex]
+%
+%	\displaystyle
+%
+%	\mathit{(Send)}
+%	\frac{\theta,e \arro{\ms{send}(p'',v)}\theta',e'}
+%	{\Gamma;\l node, p,(\theta,e),q\r \comp \Pi; \Omega \hoo \Gamma \cup \{(p'',v)\};\l node, p,(\theta',e'),q\r \comp \Pi; \Omega}\\[4ex]
+%  
+%  	\displaystyle
+%
+%	\mathit{(Receive)}
+%	\frac{\theta,e \arro{\ms{rec}(\kappa,\overline{cl_n})}\theta',e'~~~\ms{matchrec}(\theta,\overline{cl_n},q)=(\theta_i,e_i,v)}
+%	{\Gamma;\l node, p,(\theta,e),q\r \comp \Pi; \Omega \hoo \Gamma;\l node, p,(\theta'\theta_i,e'\{\kappa \mapsto e_i\}),q \sslash v \r \comp \Pi; \Omega}\\[4ex]
+%	
+%	\displaystyle
+%	\mathit{(SpawnS)}
+%	\frac{\theta,e \arro{\ms{spawn}(\kappa,node',a/n,[\overline{v_n}])}\theta',e'~~~p'\text{ is a fresh pid}~~~node'\in \Omega}
+%	{\begin{array}{l@{~}l}
+%	{\Gamma;\l node, p,(\theta,e),q\r \comp \Pi; \Omega \hoo \Gamma;\l node, p,(\theta',e'\{\kappa \mapsto p'\}),q \r}\\
+%	 \hskip 4em \comp \l node', p', \rfpair{id}{\ms{apply}~a/n(\overline{v_n}}, \nill \r \comp \Pi; \Omega 
+%	\end{array}}\\[6ex]
+%	
+%	\displaystyle
+%	\mathit{(SpawnF)}
+%	\frac{\theta,e \arro{\ms{spawn}(\kappa,node',a/n,[\overline{v_n}])}\theta',e'~~~p'\text{ is a fresh pid}~~~node'\notin \Omega}
+%	{\Gamma;\l node, p,(\theta,e),q\r \comp \Pi; \Omega \hoo \Gamma;\l node, p,(\theta',e'\{\kappa \mapsto p'\}),q \r \comp \Pi; \Omega}  \\[4ex]
+%	
+%	\displaystyle
+%	\mathit{(StartS)}
+%	\frac{\theta,e \arro{\ms{start}(\kappa,node')}\theta',e'~~~node'\notin \Omega}
+%	{\Gamma;\l node, p,(\theta,e),q\r \comp \Pi; \Omega \hoo \Gamma;\l node, p,(\theta',e'\{\kappa \mapsto node'\}),q \r \comp \Pi;~ \{node'\} \cup \Omega} \\[4ex]
+%	
+%	\displaystyle
+%	\mathit{(StartF)}
+%	\frac{\theta,e \arro{\ms{start}(\kappa,node')}\theta',e'~~~node'\in \Omega~~~err\text{ represents the error}}
+%	{\Gamma;\l node, p,(\theta,e),q\r \comp \Pi; \Omega \hoo \Gamma;\l node, p,(\theta',e'\{\kappa \mapsto err\}),q \r \comp \Pi;\Omega} \\[4ex]
+%	
+%	\displaystyle
+%	\mathit{(Self)}
+%	\frac{\theta,e \arro{\ms{self}(\kappa)}\theta',e'}
+%	{\Gamma;\l node,p,(\theta,e),q\r \comp \Pi; \Omega \hoo \Gamma;\l node, p,(\theta',e'\{\kappa \mapsto p\}),q \r \comp \Pi; \Omega }\\[4ex]
+%	
+%	\displaystyle
+%	\mathit{(Node)}
+%	\frac{\theta,e \arro{\ms{node}(\kappa)}\theta',e'}
+%	{\Gamma;\l node, p,(\theta,e),q\r \comp \Pi; \Omega \hoo \Gamma;\l node, p,(\theta',e'\{\kappa \mapsto node\}),q \r \comp \Pi; \Omega }\\[4ex]
+%	
+%	\displaystyle
+%	\mathit{(Nodes)}
+%	\frac{\theta,e \arro{\ms{nodes}(\kappa)}\theta',e'}
+%	{\Gamma;\l node, p,(\theta,e),q\r \comp \Pi; \Omega \hoo \Gamma;\l node, p,(\theta',e'\{\kappa \mapsto list(\Omega \setminus \{node\})\}),q \r \comp \Pi; \Omega }\\[4ex]
+%	
+%	\displaystyle
+%	\mathit{(Sched)}
+%	\frac{}
+%	{\Gamma\cup \set{\rfpair{p}{v}} ;\l node, p,(\theta,e),q\r \comp \Pi; \Omega \hoo \Gamma;\l node, p,(\theta,e), v:q \r \comp \Pi; \Omega }\\[4ex]
+%	
+%	\end{array}
+%  $
+%\caption{Extended standard semantics: system rules.}
+%\label{fig:ex-sys-semantics}
+%\end{figure}
+%
+
+\subsection{Causality}\label{sec:causality}
+To understand the following development, one needs not only the
+operational semantics informally discussed above, but also a notion of
+causality. Indeed, backward rules can undo an action only if all its
+causal consequences have been undone, and forward rules should store enough
+information to both decide whether this is the case and, if so, to
+restore the previous state.
+
+Thus, to guide the reader, we discuss below the possible
+causal links among the distribution primitives (including
+$\ms{spawn}$).  About the functional and concurrent primitives, the only
+dependencies are that the a message receive is a consequence of the
+scheduling of the same message to the target process (see rule
+$\mathit{Sched}$ in Appendix~\ref{app:rev-sem}), which is a
+consequence of its send.
+
+Intuitively, there is a dependency between two consecutive actions if
+either they cannot be executed in the opposite order (e.g., a message
+cannot be scheduled before having been sent), or by executing them in
+the opposite order the result would change (e.g., by swapping a
+successful $\ms{start}$ and a $\ms{nodes}$ the result of the
+$\ms{nodes}$ would change).
+
+Beyond the fact that later actions in the same process are a
+consequence of earlier actions, we have the following dependencies:
+\begin{enumerate}
+\item every action of process $p$ depends on the (successful) $\ms{spawn}$
+  of $p$;
+\item a (successful) $\ms{spawn}$ on node $nid$ depends on the $\ms{start}$ of $nid$;
+\item a (successful) $\ms{start}$ of node $nid$ depends on previous failed
+  $\ms{spawn}$s on the same node, if any (if we swap the order, the
+  $\ms{spawn}$ will succeed);
+\item a failed $\ms{start}$ of node $nid$ depends on its (successful)
+  $\ms{start}$;
+\item a $\ms{nodes}$ reading a set $\Omega$ depends on the $\ms{start}$ of
+  all nids in $\Omega$, if any (as discussed above).
+\end{enumerate}
+
+\subsection{Distributed forward reversible semantics}
+
+\begin{figure}[t]
+\small
+\hspace{-1.25cm}
+  $
+   \begin{array}{r@{}c}
+   
+  (\mathit{SpawnS}) & {\displaystyle
+  \frac{\theta,e \arro{\ms{spawn}(\kappa,nid', a/n, [\overline{v_n}])}\theta',e'~~~p'\text{ is a fresh pid}~~~nid' \in \Omega}
+  {\begin{array}{l@{~}l}
+   	\Gamma; \tuple{nid, p, h, \theta,e, q} \comp \Pi; \Omega \rh \Gamma; \tuple{nid, p, \ms{spawn}(\theta,e,nid', p'): h, \theta',e'\{\kappa \mapsto p'\}, q}\\
+  	  \hspace{25ex}\comp \tuple{nid', p', \nill, id,\ms{apply}~a/n (\overline{v_n}), \nill } \comp \Pi; \Omega
+  	\end{array}
+  	}}\\[7ex]
+  
+  	(\mathit{SpawnF}) & {\displaystyle
+  \frac{\theta,e \arro{\ms{spawn}(\kappa,nid', a/n, [\overline{v_n}])}\theta',e'~~~p'\text{ is a fresh pid}~~~nid' \notin \Omega}
+   {\Gamma; \tuple{nid, p, h, \theta,e, q} \comp \Pi; \Omega \rh \Gamma; \tuple{nid, p, \ms{spawn}(\theta,e,nid', p'): h, \theta',e'\{\kappa \mapsto p'\}, q} \comp \Pi ; \Omega
+  	}}\\[4ex]
+  	
+  		(\mathit{StartS}) & {\displaystyle
+  \frac{\theta,e \arro{\ms{start}(\kappa,nid')}\theta',e'~~~nid' \notin \Omega}
+   {\begin{array}{l@{~~}}
+   \Gamma; \tuple{nid, p, h, \theta,e, q} \comp \Pi; \Omega \rh \\ \hspace{2cm} \Gamma; \tuple{nid, p, \ms{start}(\theta,e, \ms{succ}, nid'): h, \theta',e'\{\kappa \mapsto nid'\}, q}
+   \comp \Pi ; \{nid'\}\cup \Omega
+   \end{array}
+  	}}\\[7ex]
+  	
+  (\mathit{StartF}) & {\displaystyle
+  \frac{\theta,e \arro{\ms{start} (\kappa, nid')} \theta',e'~~~nid' \in \Omega~~~err  \text{ represents the error} }
+   {\Gamma; \tuple{nid, p, h,\theta,e, q} \comp \Pi; \Omega \rh \Gamma; \tuple{nid, p, \ms{start}(\theta ,e, \ms{fail}, nid'): h, \theta',e'\{ \kappa \mapsto err \}, q} \comp \Pi ; \Omega 
+   }}\\[4ex]
+  	
+  (\mathit{Node}) & \displaystyle
+  \frac{\theta,e \arro{\ms{node}(\kappa)}\theta',e'}
+  {\Gamma; \tuple{nid, p, h, \theta,e, q} \comp \Pi; \Omega \rh \Gamma; \tuple{nid, p, \ms{node}(\theta,e): h, \theta',e'\set{\kappa \mapsto nid}, q} \comp \Pi; \Omega}\\[4ex]
+  	
+  (\mathit{Nodes}) & 
+  {{\begin{array}{c}  \displaystyle 
+  \frac{\theta,e \arro{\ms{nodes}(\kappa)}\theta',e'}
+       {\begin{array}{l}
+         \Gamma; \tuple{nid, p, h, \theta,e, q} \comp \Pi; \Omega \rh\\\hspace{2cm}
+  	 \Gamma; \tuple{nid, p, \ms{nodes}(\theta,e,\Omega): h, \theta',e'\set{\kappa \mapsto list(\Omega\setminus \{nid\})}, q} \comp \Pi; \Omega
+       \end{array}}
+  	\end{array}}}\\[6ex]
+  \end{array}
+  $
+\caption{Distributed forward reversible semantics}
+\label{fig:ex-fwd-semantics1}
+\end{figure}
+
+
+Fig.~\ref{fig:ex-fwd-semantics1} shows the forward semantics of distribution primitives, which are described below. The other rules are as in the original work~\cite{LaneseNPV18} but for the introduction of $\Omega$, and can be found in Appendix~\ref{app:dist-rev-sem}.
+
+The forward semantics in \cite{LaneseNPV18} has just one rule for $\ms{spawn}$, since it can never fail.
+Here, instead, a $\ms{spawn}$ can fail if the node fed as first argument is not part of $\Omega$. Nonetheless, following the approach of Erlang, we always return a fresh pid, independently on whether the $\ms{spawn}$ has failed or not. Also, the history item created in both cases is the same.
+Indeed, thanks to uniqueness of pids, one can ascertain whether the $\ms{spawn}$ of $p'$ has been successful or not just by checking whether there is a process with pid $p'$ in the system: if there is the $\ms{spawn}$ succeeded, otherwise it failed. 
+Hence, the unique difference between rules $SpawnS$ and $SpawnF$ is that a new process is created only in rule $SpawnS$. 
+
+Similarly, two rules describe the $\ms{start}$ function: rule $StartS$ for a successful $\ms{start}$, which updates $\Omega$ by adding the new nid $nid'$, and rule $StartF$ for a $\ms{start}$ which fails because a node with the same nid already exists. Here, contrarily to the $\ms{spawn}$ case, the two rules create different history items. Indeed, if two or more processes had a same history item $\ms{start}(\theta,e,nid)$, then it would not be possible to decide which one performed the $\ms{start}$ first (and, hence, succeeded). 
+
+Lastly, the $Nodes$ rule saves, together with $\theta$ and $e$,
+the current value of $\Omega$. This is needed to check dependencies on the $\ms{start}$ executions, as discussed in Section~\ref{sec:causality}. 
+%we refer the reader to the next
+%sub-section for a detailed explanation about why this is needed.
+The $Node$ rule, since $\ms{node}$ is a sequential
+operation, just saves the environment and the current expression.
+
+\subsection{Distributed backward reversible semantics}
+
+
+\begin{figure}[t]
+\small
+\hspace{-0.8cm}
+  $
+  \begin{array}{r@{~~}c}
+  	   
+  (\mathit{\overline{SpawnS}}) & {\displaystyle
+  \begin{array}{c}
+    \Gamma; \l nid, p, \ms{spawn}(\theta,e,nid',p'):h,\theta',e',q \r \comp \l nid', p', \nill, id,e'',\nill \r \comp \Pi; \Omega\\ 
+  	\lh_{p,\ms{spawn}(p'),\{s,sp_{p'}\}}
+  \Gamma; \l nid, p, h,\theta,e,q \r \comp \Pi; \Omega
+   \end{array}} \\[4ex] 
+  
+  (\mathit{\overline{SpawnF}}) & \displaystyle
+  \begin{array}{c}
+  	\Gamma; \l nid, p, \ms{spawn}(\theta,e,nid',p'):h,\theta',e',q \r \comp \Pi ; \Omega\\
+  	\lh_{p,\ms{spawn}(p'),\{s,sp_{p'}\}}
+  \Gamma; \l nid, p, h,\theta,e,q \r \comp \Pi; \Omega \\
+  nid'\notin\Omega
+  \end{array}\\[4ex] 
+  
+   (\mathit{\overline{StartS}}) & {\displaystyle
+  \begin{array}{c}
+    \Gamma; \l nid, p, \ms{start}(\theta,e,\ms{succ}, nid'):h,\theta',e',q \r \comp \Pi; \Omega \cup \{nid'\}\\ 
+  	\lh_{p,\ms{start}(nid'),\{s,st_{nid'}\}}
+  \Gamma; \l nid, p, h,\theta,e,q \r \comp \Pi; \Omega\\
+  \text{if }spawns(nid',\Pi)=\nill \wedge reads(nid',\Pi)=\nill \wedge failed\_starts(nid',\Pi)=\nill
+   \end{array}} \\[5ex] 
+   
+  (\mathit{\overline{StartF}}) & \displaystyle
+  \begin{array}{c}
+  	\Gamma; \l nid, p, \ms{start}(\theta,e,\ms{fail},nid'):h,\theta',e',q \r \comp \Pi ; \Omega\\
+  	\lh_{p,\ms{start}(nid'),\{s\}}
+  \Gamma; \l nid, p, h,\theta,e,q \r \comp \Pi; \Omega 
+  \end{array}\\[3ex]
+  
+  (\mathit{\overline{Node}}) & \displaystyle
+  \Gamma; \l nid, p, \ms{node}(\theta,e):h,\theta',e',q \r \comp \Pi ; \Omega
+  	\lh_{p,\ms{node},\{s\}}
+  \Gamma; \l nid, p, h,\theta,e,q \r \comp \Pi; \Omega \\[2ex]
+  
+  (\mathit{\overline{Nodes}}) & \displaystyle
+  \begin{array}{c}
+  	
+  \Gamma; \l nid, p, \ms{nodes}(\theta,e,\Omega'):h,\theta',e',q \r \comp \Pi ; \Omega
+  	\lh_{p,\ms{nodes},\{s\}}
+  \Gamma; \l nid, p, h,\theta,e,q \r \comp \Pi; \Omega \\
+  \text{if }\Omega=\Omega'
+  \end{array}
+  \end{array}
+  $
+\caption{Extended backward reversible semantics}
+\label{fig:ex-bwd-semantics1}
+\end{figure}
+
+Fig.~\ref{fig:ex-bwd-semantics1} depicts the backward semantics of the
+distribution primitives, the other rules are
+collected in Appendix~\ref{app:dist-rev-sem}.  The semantics is defined
+in terms of the relation $\lh_{p,r,\Psi}$, where:
+\begin{itemize}
+\item $p$ represents the pid of the process performing the backward transition
+\item $r$ describes which action has been undone
+\item $\Psi$ lists the requests satisfied by the backward transition
+\end{itemize}  
+These labels will come into play later on, while defining the rollback semantics. We may drop them when not relevant.
+
+
+As already discussed, to undo an action, we need to ensure that
+its consequences, if any, have been undone before. When consequences
+in other processes may exist, side conditions are used to check that
+they have already been undone.
+
+
+%Now, by observing the set of rules we can label them in two categories:
+%in the first one we find those rules that undo actions without
+%causal-dependencies, while in the second one we find those rules that undo
+%actions that potentially have some causal-dependency. 
+%Some rules make use of auxiliary functions, this happens because before undoing some steps we need to verify that some precondition are ensured in order to guarantee causal-consistency. 
+%
+Rule $\overline{SpawnS}$ is analogous to rule $\overline{Spawn}$ in
+Fig.~\ref{fig:rev-sem}. Rule $\overline{SpawnF}$ undoes a failed
+spawn. As discussed in Section~\ref{sec:causality}, we first need to
+undo, if any, a $\ms{start}$ of a node with the target $nid$,
+otherwise the $\ms{spawn}$ will now succeed. To this end, we check
+that $nid' \notin \Omega$.
+
+%can only fail
+%because the node where it should have happened was not part of
+%$\Omega$, before undoing the failed spawn we must check that the
+%condition still holds.
+
+Then, we have rule $\ol{StartS}$ to undo the (successful) creation of
+node $nid'$. Before applying it we need to ensure three conditions:
+(i) that no process is running on node $nid'$; (ii) that no
+$\ms{nodes}$ has read $nid'$; and (iii) that no other $\ms{start}$ of
+a node with name $nid'$ failed. The conditions, discussed in
+Section~\ref{sec:causality}, are checked by ensuring that the lists of
+pids computed by auxiliary functions $spawns$, $reads$ and
+$failed\_starts$ are empty. Indeed, they compute the list of pids of processes in $\Pi$ that have performed, respectively, a $\ms{spawn}$ on $nid'$, a $\ms{nodes}$ returning a set containing $nid'$, and a failed start of a node with name $nid$.
+%function $reads(nid',\Pi)$ returns the list of processes
+%that have performed at least one $\ms{nodes}$ when $nid'$ was part of $\Omega$,
+%and function $spawns(nid',\Pi)$ returns the list of processes that performed successful $\ms{spawn}$ on $nid'$.
+%Lastly, function $failed\_start(nid',\Pi)$ return the list of processes that failed
+%at least one start of $nid'$.
+Condition (i) needs to be checked
+since nids are hardcoded, hence any process could
+perform a spawn on $nid'$.
+The check would be redundant if nids would
+be created fresh by the $\ms{start}$ function.
+%The auxiliary function
+%$reads(nid', \Pi) = \nill$ ensures that $nid'$ was not part of the
+%result of any $\ms{nodes}$ performed by a process in $\Pi$, as required
+%by condition (ii) and discussed in Section~\ref{sec:causality}.
+%Indeed, if $nid'$ is part of a $\ms{nodes}$ history
+%item then we cannot undo its $\ms{start}$, otherwise if we then undo
+%the $\ms{nodes}$ (containing $nid'$) and finally we redo it the final
+%result would be different, breaking thus causal-consistency.
+%Lastly, condition (iii), imposed by $failed\_starts(nid',\Pi)=\nill$ verifies that the no other process failed to
+%start a node with the same nid and failed because it was already in
+%$\Omega$.
+
+Rule $\ol{StartF}$ instead requires no side condition: $\ms{start}$ fails
+only if the node already exists, but this condition remains true afterwards,
+since we do not have primitives to stop a node. Rule $\ol{Node}$ has
+no dependency either.
+
+To execute rule $\ol{Nodes}$ we must ensure that the value of $\Omega'$ in the history item and of $\Omega$ in the system are the same, as discussed in Section~\ref{sec:causality}.
+%Otherwise, if we undo and then redo the $\ms{nodes}$ the result would be different, unlocking thus a state previously not reachable and breaking causal-consistency.
+
+We now report a fundamental result of the reversible
+semantics. As most of our results, it holds for \emph{reachable} systems, that is systems that can be obtained using the rules of the semantics from a single process with empty history.
+
+\begin{restatable}[Loop Lemma]{lemma}{looplemma}
+  For every pair of reachable systems, $s_1$ and $s_2$, we have $s_1
+  \rh s_2$ iff $s_2 \lh s_1$.
+\end{restatable}
+Note that, as exemplified above, this result would fail if we allow
+one to undo an action before its consequences.
+
+\subsection{Distributed rollback semantics}
+
+Since undoing steps one by one may be tedious and unproductive for the
+developer, CauDEr provides a rollback operator, that allows the
+developer to undo several steps in an automatic manner, while
+maintaining causal consistency. We extend it to cope with
+distribution.  Our definition takes inspiration from the
+formalization style used in~\cite{LanesePV21}, but it
+improves it and applies it to a system with explicit local
+queues for messages. The generalization is not trivial, since the action moving
+messages from the global mailbox to the local queue (see rule $Sched$ in
+Appendix~\ref{app:rev-sem}, Fig.~\ref{fig:bwd-semantics}) is concurrent to normal actions, and when
+both such an action and a normal one are enabled one has to undo the
+correct one to ensure that only consequences of the target action are
+undone.
+
+We denote a system in rollback mode by $\sqll \system \sqrr_{\{p,\psi\}}$, 
+where the subscript means that we wish to undo the action $\psi$ performed by process $p$ 
+and  every action which depends on it.
+More generally, the subscript of $\sqll \sqrr$, often depicted with $\Psi$ or
+$\Psi'$ (where $\Psi$ can be empty while $\Psi'$ cannot), can be seen as a stack (with $:$ as cons operator) of undo requests that need to be satisfied. Once the stack is empty, the system has reached the state desired by the user.
+We consider requests $\{p,\psi\}$, asking process $p$ to undo a specific action, namely:
+\begin{itemize}
+	\item $\{p,s\}$: a single step back;
+	\item $\{p,\lambda^{\Downarrow}\}$: the receive of the message uniquely identified by $\lambda$;
+	\item $\{p,\lambda^{\Uparrow}\}$: the send of the message uniquely identified by $\lambda$;
+	\item $\{p,\lambda^{sched}\}$: the scheduling of the message uniquely identified by $\lambda$;
+	\item $\{p, st_{nid}\}$: the successful start of node $nid$;
+	\item $\{p, sp_{p'}\}$: the spawn of process $p'$.
+\end{itemize}
+
+The rollback semantics is defined in
+Fig.~\ref{fig:ex-roll-semantics} in terms of the relation $\gn$,
+selecting which backward rule to apply and when.
+There are two categories of rules: (i) $U$-rules that
+perform a step back using the backward semantics; (ii) rule $Request$ that pushes a new
+request on top of $\Psi$ whenever it is not possible to undo an action since its consequences need to be undone before.
+
+%Here, we have two kind of rules, the ones
+%belonging to the first kind are those rules prefixed by $\underline{U}$. These
+%five rules are the ones actually performing a step back using the backward
+%semantics, then, the remaining rules belong to the second kind, and those are the rules which push another request on the top of the stack because a consequence of the  action that we desire to undo has to be undone beforehand.
+
+\begin{figure}[t]
+  \small
+  \hspace{-1cm}
+$
+\begin{array}{c}
+  \begin{array}{c@{~}c@{~~~}c@{~}c}
+  (U-Satisfy) & \displaystyle
+  \frac{\mathcal{S}
+  \lh_{p,r,\Psi'} 
+  \mathcal{S'}~\wedge~ \psi \in \Psi'}
+  {\sqll \mathcal{S}\sqrr_{\{p,\psi\}:\Psi} 
+  \gn 
+  \sqll \mathcal{S'}\sqrr_{\Psi}} &
+
+  (U-Unique) & \displaystyle
+  \frac{\forall r,\Psi'~~\psi\notin\Psi'~\wedge~\mathcal{S} 
+  \lh_{p,r,\Psi'} 
+  \mathcal{S''} \Rightarrow \system' = \system''}
+  {\sqll \mathcal{S}\sqrr_{\{p,\psi\}:\Psi} 
+  \gn 
+  \sqll \mathcal{S'}\sqrr_{\{p,\psi\}:\Psi}}
+  \end{array}\\[4ex]
+  
+  (U-Sched)~\displaystyle
+  \frac{\mathcal{S} \lh_{p,r,\{s,\lambda'^{sched}\}} \mathcal{S'}~\wedge\lambda'^{sched} \not= \lambda^{sched}}
+  {\sqll \mathcal{S}\sqrr_{ \{p,\lambda^{sched}\}:\Psi} 
+  \gn 
+  \sqll \mathcal{S'}\sqrr_{\{p,\lambda^{sched}\}:\Psi}}\\[4ex]
+    
+  (U-Act)~\displaystyle
+  \frac{\mathcal{S} 
+  \lh_{p,r,\Psi'} 
+  \mathcal{S'}~\wedge~ \psi \notin \Psi' ~\wedge ~\lambda^{sched}\notin \Psi'~\wedge ~\psi \not= \lambda^{sched} ~ \forall \lambda \in \mathbb{N}}
+  {\sqll \mathcal{S}\sqrr_{\{p,\psi\}:\Psi} 
+  \gn 
+  \sqll \mathcal{S'}\sqrr_{\{p,\psi\}:\Psi}}\\[4ex]
+   
+  (Request)~\displaystyle
+  \frac{\mathcal{S} =\Gamma;\l nid,p,h,\theta,e,q\r\comp\Pi;\Omega~\wedge~\mathcal{S}
+  \not\lh_{p,r,\Psi'}~\wedge~\{p',\psi'\} = dep(\l nid,p,h,\theta,e,q\r,\mathcal{S})}
+  {\sqll \mathcal{S}\sqrr_{\{p,\psi\}:\Psi} 
+  \gn 
+  \sqll \mathcal{S'}\sqrr_{\{p',\psi'\}:\{p,\psi\}:\Psi}}\\[4ex]  
+
+\end{array}
+$
+\caption{Rollback semantics}
+\label{fig:ex-roll-semantics}
+\end{figure}
+
+
+
+
+
+Let us analyse the $U$-rules. 
+%The rollback semantics has to undo only the actions that are in the stack, and every action which depends on them, the remaining actions must not be undone.
+During rollback, more than one backward rule could be applicable
+to the same process. In our setting, the only possibility is that one
+of the rules is a $\overline{Sched}$ and the other one is not.
+It is important to select which rule to apply, to ensure that only consequences of the target action are undone.
+
+First, if an enabled transition satisfies our target, then it is executed and the corresponding request is removed (rule $U-Satisfy$). 
+Intuitively, since two applications of rule $\mathit{Sched}$ to the same process are always causally dependent, if the target action is an application of $\mathit{Sched}$, an enabled $\mathit{Sched}$ is for sure one of its consequences, hence it needs to be undone (rule $U-Sched$). Dually, if the target is not a $\mathit{Sched}$ and a non $\mathit{Sched}$ is enabled, we do it (rule $U-Act$). If a unique rule is applicable, then it is selected (rule $U-Unique$). 
+
+%do not commute, i.e., they have to be undone in the same order as they have been performed during the forward computation in order to ensure causal-consistency, if our goal is to undo a $\mathit{Sched}$ and more than one backward rule can be applied we have to choose the $\overline{Sched}$, regardless of the fact that the $\overline{\mathit{Sched}}$ undoes the scheduling of the "right" message or not (the right message is the one identified by the $\lambda$ in the request on top of $\Psi$).
+%Similarly, if we aim to undo an action different from $\mathit{Sched}$ and we have more than one option available we need to go for the action that is not a $\mathit{\overline{Sched}}$.
+%In both situations, if we have only one backward rule available we have to undo that one.
+%Rules prefixed by $\underline{U}$ ensure exactly this property.\\
+
+Rule $Request$ considers the case where no backward transition in the
+target process is enabled. This depends on some consequence on another
+process of the action on top of the history. Such a consequence needs
+to be undone before, hence the rule finds out using operator
+$\ms{dep}$ in Fig.~\ref{fig:dep} both the dependency and the target process and adds on top of $\Psi$ the corresponding
+request.
+
+Let us discuss operator $\ms{dep}$. In the first case, a send cannot
+be undone since the sent message is not in the global mailbox, hence a
+request has to be made to the receiver $p'$ of undoing the $Sched$ of
+the message $\lambda$.
+
+\begin{figure}[t]
+  \hspace{-2cm}
+  $
+  \begin{array}{lll}
+    \ms{dep}(<\_,\_,\ms{send}(\_,\_,p',\{\lambda,v\}):h,\_,\_,\_>,\_;\_;\_) &=\{p',\lambda^{sched}\}&\\
+    \ms{dep}(<\_,\_,\ms{nodes}(\_,\_,\{nid'\}\cup\Omega'):h,\_,\_,\_>,\_;\Pi;\Omega)&= \{parent(nid',\Pi),st_{nid'}\}&\ms{if}~nid'\notin\Omega\\
+    \ms{dep}(<\_,\_,\ms{spawn}(\_,\_,\_,p'):h,\_,\_,\_>,\_;\Pi;\_) & =\{p',s\}&\ms{if}~p'\in\Pi\\
+    \ms{dep}(<\_,\_,\ms{spawn}(\_,\_,nid',\_):h,\_,\_,\_>,\_;\Pi;\_) & =\{parent(nid',\Pi),st_{nid'}\}&\ms{if}~p'\notin\Pi\\
+    \ms{dep}(<\_,\_,\ms{start}(\_,\_,\ms{succ},nid'):h,\_,\_,\_>,\_;\Pi;\_)&=\{fst(reads(nid',\Pi)),s\}&\ms{if}~reads(nid',\Pi)\not=\nill\\
+    \ms{dep}(<\_,\_,\ms{start}(\_,\_,\ms{succ},nid'):h,\_,\_,\_>,\_;\Pi;\_)&=\{fst(spawns(nid',\Pi)),s\}&\ms{if}~spawns(nid',\Pi)\not=\nill\\
+    \ms{dep}(<\_,\_,\ms{start}(\_,\_,\ms{succ},nid'):h,\_,\_,\_>,\_;\Pi;\_)&= \{fst(failed\_start(nid',\Pi)),s\}&
+  \end{array}
+  $
+  \caption{Dependencies operator}
+\label{fig:dep}
+\end{figure}
+
+
+
+In case of multiple dependencies, we add them one by one. This is the case
+of, e.g., case $\ms{nodes}$, where we need to undo the start of all the
+nodes which are in $\{nid'\}\cup\Omega'$ but not in $\Omega$. Adding all the
+dependencies at once would make the treatment more complex, since by
+solving one of them we may solve others as well, and thus we would
+need an additional check to avoid starting a computation to undo a
+dependency which is no more there. Adding the dependencies one by one
+solves the problem, hence operator $\ms{dep}$ nondeterministically
+selects one of them. Notice also that the order in which dependencies
+are solved is not relevant.
+
+In some cases (e.g., $\ms{send}$) we find a precise target event, in others
+we use just $s$, that is a single step. In the latter case, a backward
+step is performed (and its consequences are undone as well), then the
+condition is re-checked and another backward step is required, until
+the correct step is undone. We could have computed more precise
+targets, but this would have required additional technicalities.
+
+%Finally, let us discuss the auxiliary functions that in some scenarios we use to
+%compute the correct dependency.
+Function $parent(nid',\Pi)$, used in the definition of $\ms{dep}$, returns the pid of the process that started
+$nid'$.
+
+%\begin{example}
+%Rule $\underline{\mathit{Nodes}}$ cannot be undone if the $\Omega$ saved in the history item is not identical to the one of the system, because otherwise if we undo the $\ms{nodes}$ and then we redo it we would obtain a different result, entering thus a new state.
+%To this end, if this condition is not met we push, one by one, the request of undoing the nodes contained in the difference of the two sets.
+%The decision of pushing these requests one by one is due to the fact that by adding them all together we could face a tricky situation.
+%Indeed, one of the requests, say $\{p,\psi\}$, in $\Psi$ could have depended on one of the deepest requests, and then while undoing $\{p,\psi\}$ we would have had to undo also the dependency, i.e., pushing on the stack a request which is already present, having then two identical requests in the stack. Pushing the requests one by one makes sure that this situation will not happen.
+%\end{example}
+
+%The other rules, although they deal with different scenarios, follow the same principles as rule $\ul{Nodes}$, when all the criteria to undo a step are not met the semantics pushes one by one the consequences of such action on top of the stack, until it will be possible to undo the desired action.
+
+An execution of the rollback operator corresponds to a backward derivation, while
+the opposite is generally false.
+
+\begin{restatable}[Soundness of rollback]{theorem}{rollbacksoundness}
+  If $\sqll \system \sqrr_{\Psi'} \gn^* \sqll \system'\sqrr_{\Psi}$ then $\system \lh^* \system'$ where $\mbox{}^*$ denotes reflexive ans transitive closure.
+\end{restatable}
+
+In addition, the rollback semantics generates the
+shortest computation satisfying the desired rollback request.
+
+\begin{theorem}[Minimality of rollback]
+  If $\sqll \system \sqrr_{\Psi} \gn^* \sqll \system'\sqrr_{\emptyset}$ then
+  the corresponding backward derivation is the shortest one among the ones satisfying $\Psi$.
+\end{theorem}
+A precise formalization and proof of this result is quite long, hence for space reasons we refer to~\cite[Theorem 3.2]{tesi}.
+
+
+%Finally, we have rule $\underline{\mathit{Start}}$, which pushes requests on the stack when it is not possible to undo the successful start of the node identified by the history item (we will refer to it as $node'$). A successful start cannot be undone if there are processes still running on the node, or if someone read the node by means of rule $\mathit{Nodes}$, or if someone tried to start the same node and failed because the node was already part of $\Omega$. Similarly to the previous rule, to avoid having the same request twice, we push one by one each request until all the three criteria are met.
+
+
+\section{Distributed CauDEr}\label{sec:dist-cauder}
+
+CauDEr~\cite{LNPV18,Gonzalez-AbrilV21,Cauder} is the proof-of-concept
+debugger that we extended to support distribution following the
+semantics above. Notably, CauDEr works on Erlang, but primitives for
+distribution are the same in Core Erlang and in Erlang, hence our
+approach can be directly applied.  CauDEr is written completely in
+Erlang and bundled up with a convenient graphical user interface to
+facilitate the interaction. The usual CauDEr workflow is the
+following. The user selects the Erlang source file, then CauDEr loads
+the program and shows the source code to the user.  Then, the user can
+select the function that will act as entry point, specify its
+arguments, and the node name where the first process is running. 
+The user can either perform single steps on some process (both forward
+and backward), or proceed in an automatic manner (also both forward
+and backward), or use the rollback operator.
+The interface (see Fig.~\ref{fig:cauder-screenshot}) is organized as follow: CauDEr shows the source code on the top left, the selected
+process' state and history (log is not considered in this extension)
+on the bottom left, and information on system structure and execution
+on the bottom right. Execution controls are on the top right.
+
+We illustrate below how to use CauDEr to
+find a non-trivial bug.
+
+\subsubsection*{Finding distributed bugs with CauDEr.}
+
+\begin{figure}[t]
+  \hspace{-2.5cm}
+	\includegraphics[scale=0.35]{img/cauder-screenshot}
+	\caption{A screenshot of CauDEr.}
+	\label{fig:cauder-screenshot}
+\end{figure}
+
+Let us consider the following scenario. A client produces a stream of data and wants to store them in a distributed storage system.
+A server acts as a hub: it receives data from the client, forwards them to a storage node, receives a confirmation that the storage node has saved the data, and finally sends an acknowledgement to the client.
+Each storage node hosts one process only, acting as node manager, and has an id as part of its name, ranging from one to five. Each node manager is able to store at most $m$ packets. Once the manager reaches the limit, it informs the server that its capacity has been reached.
+%(this constraint could be imposed for various reason e.g., performance, lack of space, balancing of the load, etc).
+The server holds a list of domains and an index referring to one of them.  
+Each domain is coupled with a counter, i.e., an integer,
+and each domain can host at most five storage nodes.  Each time the
+server receives a notification from a node manager stating that the
+node maximum capacity has been reached, it proceeds as follows. If the
+id of the current storage manager is five it means that such domain
+has reached its capacity. Then, the server selects the next domain in
+the list, resets its counter and starts a new node (and a
+corresponding storage manager) on the new domain. If the id of the
+node is less than five then the server increases its counter and then
+starts a new node (and storage manager) on the same domain, using the
+value of the counter as new id. Each node should host at most one
+process.
+
+Let us now consider the program $\ms{distributed\_storage\_node.erl}$,
+available in the GitHub repository~\cite{DistCauder}, which shows a wrong
+implementation of the program described above. In order to debug the program one
+has to load it and start the system. Then, it is sufficient to execute
+about 1500 steps forward to notice that something went wrong. Indeed, by checking
+the $\ms{Trace}$ box (Fig.~\ref{fig:cauder-screenshot}) one can see a warning: 
+a $\ms{start}$ has failed since a node with the same name already existed.
+Then, since no check is performed on
+the result of the $\ms{start}$, the program spawns a new storage manager on
+a node with the same name as the one 
+that failed to start. Hence, now two
+storage managers run on the same node. 
+
+%This violation of the protocol could cause a slow down of the whole
+%system or, even worse, could obstacle the correct storing of the data.
+To
+investigate why this happened one can roll back to the reception of the message
+$\ms{\{store,full\}}$ right before the failed $\ms{start}$.
+Note that it would not be easy to obtain the same result without reversibility:
+one would need to re-run the program, and, at least in principle, a different scheduling may lead to a different state where the error may not occur.
+After rolling back one can perform
+forward steps on the server in manual mode since the misbehavior happened there. After receiving the message, the server enters the case where the index of
+the storage manager is 5, which is correct because so far we have 5 storage nodes on
+the domain. Now, the server performs the start on the selected domain and only afterwards it selects the new
+domain and increases the counter, whereas it should have first selected a new
+domain, increased its counter and then proceeded to start a new storage node
+(and a new storage manager) there. This misbehaviour has occurred because a few
+lines of code have been swapped.
+
+
+\section{Related work and conclusion}\label{sec:related}
+
+In this work we have presented an extension of CauDEr, a
+causal-consistent reversible debugger for Erlang, and the related
+theory. CauDEr has been first introduced in \cite{LNPV18}
+(building on the theory in~\cite{LaneseNPV18}) and then improved
+in~\cite{Gonzalez-AbrilV21} with a refined graphic interface and to
+work directly on Erlang instead of Core Erlang. We built our extension
+on top of this last version. CauDEr was able to deal with
+concurrent aspects of Erlang: our extension supports also some
+distribution primitives ($\ms{start, node}$ and $\ms{nodes}$). We built
+the extension on top of the modular semantics for Erlang described
+in~\cite{LaneseNPV18,Gonzalez-AbrilV21}. Monolithic approaches to the
+semantics of Erlang also exist~\cite{unif-sem-erl}, but the two-layer
+approach is more convenient for us since the reversible extension only
+affects the system layer.
+
+Another work defining a formal semantics for distributed Erlang
+is~\cite{paper:distributed-erlang-sem}. There the emphasis is on ensuring the
+order of messages is respected in intra-node communications but not in inter-node communications (an aspect we do
+not consider). Similarly to us, they have rules to start new nodes and a to perform
+remote spawns, although they do not consider the case where these rules fail.
+
+In the context of CauDEr also replay has been
+studied~\cite{LanesePV21}. In particular CauDEr supports
+causal-consistent replay, which allows one to replay the execution of
+the system up to a selected action, including \emph{all and only} its
+\emph{causes}. This can be seen as dual to rollback.  Our extension
+currently does not support replay, we leave it for future work.
+
+To the best of our knowledge causal-consistent debugging has been
+explored in a few settings only. The seminal paper~\cite{GiachinoLM14}
+introduced causal-consistent debugging in the context of the toy
+language $\mu$Oz. Closer to our work is
+Actoverse~\cite{paper:actoverse}, a reversible
+debugger for the Akka actor model.  Actoverse provides
+message-oriented breakpoints, which allow the user to stop when some
+conditions on messages are satisfied, rollback, state inspection,
+message timeline and session replay, which allows one to replay the
+execution of a program given the log of a computation, as well as the capacity
+to go back in the execution. While many of these features will be interesting for CauDEr, they currently do not support distribution.
+
+Reversible debugging of concurrent programs has also been studied for
+imperative languages~\cite{HoeyU19}. However, differently from us,
+they force undoing of actions in reverse order of execution, and they
+do not support distribution.
+ 
+
+%\section{Conclusion}\label{sec:conclusion}
+
+As future work it would be interesting to refine the semantics to deal with failures (node crashes, network partitions). 
+Indeed, failures are unavoidable in practice, and we think reverse debugging in a faulty context could be of great help to the final user. Another future line of research concerns the support of additional features of the Erlang language, such as error handling, failure notification, and code hot-swapping.
+
+\bibliographystyle{splncs04}
+\bibliography{references}
+
+\newpage
+
+\appendix
+
+
+\section{Semantics}\label{app:semantics}
+This section contains the various semantics that due to space reasons we could
+not fit in the paper. It is intended as a help for the reviewer providing
+auxiliary information locally, if the
+paper will be accepted it will be removed and substituted with the appropriate
+references.  
+
+\subsection{Expression level semantics}\label{app:expr-sem}
+\begin{figure}[t]
+\centering
+\small
+  $
+  \begin{array}{c}
+  
+  	\displaystyle
+  	
+  	\mathit{Var} 
+  	\frac{}
+  	{\theta,X \xrightarrow{\tau} \theta, \theta(X)}
+  		
+	\hskip 3em
+  	
+  	\mathit{Tuple} 
+  	\frac{\theta,e_i \xrightarrow{\ell} \theta',e_i'}
+  	{\theta,\{\overline{v_{1,i-1}}, e_i, \overline{e_{i+1,n}}\} \xrightarrow{\ell}
+  			\theta',\{\overline{v_{1,i-1}}, e'_i, \overline{e_{i+1,n}}\}}\\[4ex]
+  			
+  	\displaystyle
+
+  	\mathit{List1} 
+  	\frac{\theta,e_1 \xrightarrow{\ell} \theta',e_1'}
+  	{\theta,[e_1|e_2] \xrightarrow{\ell} \theta',[e'_1|e_2]}
+  	
+  	\hskip 2em
+  			
+	\mathit{List2} 
+  	\frac{\theta,e_2 \xrightarrow{\ell} \theta',e_2'}
+  	{\theta,[v_1|e_2] \xrightarrow{\ell} \theta',[v_1|e'_2]}\\[4ex]
+  	
+  	\displaystyle
+  	
+  	\mathit{Let1}
+  	\frac{\theta, e_1 \xrightarrow{\ell} \theta',e'_1}
+  	{\theta, \ms{let~}X = e_1~\ms{in}~e_2 \xrightarrow{\ell} \theta', \ms{let~}X =e'_1 \ms{~in~}e_2} 
+  	
+  	\hskip 2em
+  	
+  	\mathit{Let2}
+  	\frac{}
+  	{\theta, \ms{let~}X = v~\ms{in}~e \xrightarrow{\tau} \theta[X \mapsto v],e}\\[4ex]
+
+	\displaystyle
+  	
+  	\mathit{Case1}
+  	\frac{\theta, e \xrightarrow{\ell} \theta',e'}
+  	{\theta, \ms{case~}e~\ms{of~}cl_1;...;cl_n~\ms{end}\xrightarrow{\ell} \theta', \ms{case~}e'~\ms{of~}cl_1;...;cl_n~\ms{end}}\\[4ex]
+
+	\displaystyle
+	
+	\mathit{Case2}
+	\frac{\ms{match}(\theta,v,cl_1,...,cl_n)=\l\theta_i,e_i\r}
+	{\theta, \ms{case}~v~\ms{of}~cl_1;...;cl_n~\ms{end}
+	\xrightarrow{\tau} 
+	\theta\theta_i,e_i}\\[4ex]
+	
+	\displaystyle
+	
+	\mathit{Call1}
+	\frac{\theta, e_i \xrightarrow{\ell} \theta',e'_i ~~i\in\{1,...,n\}}
+	{\theta, \ms{call~op}(\overline{v_{1,i-1}}, e_i, \overline{e_{i+1,n}}) \xrightarrow{\ell} 
+	\theta, \ms{call~op}(\overline{v_{1,i-1}}, e'_i, \overline{e_{i+1,n}})} \\[4ex]
+	
+	\displaystyle
+	
+	\mathit{Call2}
+	\frac{\ms{eval}(\ms{op},v_1,...,v_n)=v}
+	{\theta,\ms{call~op} (v_1,...,v_n)\xrightarrow{\tau} \theta,v}\\[4ex]
+
+	\displaystyle
+	
+	\mathit{Apply1}
+	\frac{\theta, e_i \xrightarrow{\ell} \theta',e'_i ~~i\in\{1,...,n\}}
+	{\theta,\ms{apply~}a/n(\overline{v_{1,i-1}}, e_i, \overline{e_{i+1,n}}) 
+	\xrightarrow{\ell} 
+	\theta',\ms{apply~}a/n(\overline{v_{1,i-1}}, e'_i, \overline{e_{i+1,n}})}\\[4ex]
+	
+	\displaystyle
+	
+	\mathit{Apply2}
+	\frac{\mu(a/n)=\ms{fun}(X_1,...,X_n) \rightarrow e}
+	{\theta, \ms{apply}~a/n(v_1,...,v_n)\xrightarrow{\tau} 
+	\theta\cup \{X_1 \mapsto v_1,...,X_n \mapsto v_n\},e }
+    
+  \end{array}
+  $
+\caption{Standard semantics: evaluation of sequential expressions.}
+\label{fig:seq-semantics}
+\end{figure}
+
+\begin{figure}[t]
+\small
+\centering
+  $
+  \begin{array}{c}
+  
+  \displaystyle
+  	
+  \mathit{Send1}
+  \frac{\theta,e_1 \xrightarrow{\ell} \theta',e'_1}
+  {\theta,e_1~!~e_2\xrightarrow{\ell}\theta',e'_1~!~e_2}
+  
+  \hskip 1.5em
+  
+  \mathit{Send2}
+  \frac{\theta,e_2 \xrightarrow{\ell} \theta',e'_2}
+  {\theta,v_1~!~e_2\xrightarrow{\ell}\theta',v_1~!~e'_2}\\[4ex]
+  
+  \displaystyle
+  
+  \mathit{Send3}
+  \frac{}
+  {\theta,v_1~!~v_2\xrightarrow{\ms{send}(v_1,v_2)}\theta',v_2}\\[4ex]
+  
+  \displaystyle
+  
+  \mathit{Receive}
+  \frac{}
+  {\theta, \ms{receive}~cl_1;...;cl_n~\ms{end}
+  \xrightarrow{\ms{rec}(\kappa,\overline{cl_n})} \theta,\kappa}\\[4ex]
+  
+  \displaystyle
+
+  \mathit{Spawn1}
+  \frac{\theta, e_i \xrightarrow{\ell} \theta',e'_i ~~i\in\{1,...,n\}}
+  {\theta,\ms{spawn}(a/n,[\overline{v_{1,i-1}}, e_i, \overline{e_{i+1,n}}])
+  \xrightarrow{\ell} 
+  \theta',\ms{spawn}(a/n,[\overline{v_{1,i-1}}, e'_i, \overline{e_{i+1,n}}])}\\[4ex]
+  
+  \displaystyle
+  
+  \mathit{Spawn2}
+  \frac{}
+  {\theta,\ms{spawn}(a/n,[\overline{v_n}]) \xrightarrow{\ms{spawn}(\kappa,a/n,[\overline{v_n}])} \theta,\kappa }\\[4ex]
+  
+  \displaystyle
+  
+  \mathit{Self}
+  \frac{}
+  {\theta,\ms{self}() \xrightarrow{\ms{self}(\kappa)} \theta,\kappa }\\[4ex]
+  
+  \displaystyle
+
+  \end{array}
+  $
+
+\caption{Concurrent semantics: evaluation of concurrent expressions.}
+\label{fig:conc-semantics}
+\end{figure}
+
+The expression level semantics is defined in terms of the labeled transition relation:
+\[ \{Env,Expr\} \times Label \times \{Env, Expr\} \]
+where $Env$ represents the domain of environments, $Expr$ represents the domain
+of expressions. While $Label$ is an element of the following set:
+\[\{\tau, \ms{send}(v_1,v_2), \ms{rec}(\kappa, \overline{cl_n}),
+  \ms{spawn}(\kappa, a/n, [\overline{v_n}]), \ms{self}(\kappa)\}\]
+We use $\ell$ to spawn over labels.
+
+We divide the expression rules in two sets, the first one being the set of
+sequential expression, depicted in Fig.~\ref{fig:seq-semantics}, and the second
+one being the set of concurrent expression, depicted in
+Fig.~\ref{fig:conc-semantics} (by abuse of notation we put $\ms{self}$ in the
+second set).
+As it is in Erlang, we consider that the order of evaluation of the arguments is fixed from left to right.
+
+The sequential expressions define the behavior of some constructs of the language
+without side-effects, like the $\ms{case}$ construct, the $\ms{let}$ binding
+construct or the call of a function. Moreover, these rules define the evaluation
+of an expression inside the data structures of the language (lists and tuples).
+We label the evaluation of sequential expressions with $\tau$ since they
+can be considered 'silent' operations and we do not need to distinguish them in the
+system semantics.
+
+A function in a program can be either defined by the user or built-in. In the
+former case we apply rule $Apply$, where $\mu$ maps a function name
+$a/n$ to its body, conversely in the latter case we apply rule rule $Call$,
+where $\ms{eval}$ evaluates the function. 
+
+The only tricky situation in the sequential rules arises in rule $Case2$, where the
+auxiliary function $\ms{match}$ is used. Given an environment $\theta$, a value
+$v$, and $\ol{cl_n}$ clauses the function $\ms{match}$ searches the first clause
+$cl_i$ such that $v$ matches $pat_i$ and the guards hold.
+
+Now, let us move to the concurrent expressions. Here, we gathered the rules that
+define the semantics of concurrent operations at the expression level.
+We can distinguish these rules according to a simple criteria: whether we
+locally know or not to what they reduce. 
+Rules $Send1, Send2, Send3$ and $Spawn1$ belong to the first category, indeed we
+do not need any of the information available at the system level to evaluate
+them.
+On the contrary, to evaluate rules $Receive, Spawn2$ and $Self$ we need
+information available at the system level. To tackle the problem, each of this
+expressions returns a fresh variable $\kappa$, which acts like a future, then
+the system level is in charge of binding $\kappa$ to
+its proper value (e.g., the pid of the new process).
+
+
+\subsection{System level semantics}\label{app:sys-sem}
+
+\begin{figure}[t]
+\small
+\centering
+  $
+	\begin{array}{c}
+	\displaystyle
+
+	\mathit{Seq}
+	\frac{\theta,e\xrightarrow{\tau}\theta',e'}
+	{\Gamma;\l p,\theta,e,q\r \comp \Pi \hoo \Gamma;\l p,\theta',e',q\r \comp \Pi}\\[4ex]
+
+	\displaystyle
+
+	\mathit{Send}
+	\frac{\theta,e \arro{\ms{send}(p'',v)}\theta',e'}
+	{\Gamma;\l p,\theta,e,q\r \comp \Pi \hoo \Gamma \cup (p'',v);\l p,\theta',e',q\r \comp \Pi}\\[4ex]
+  
+  	\displaystyle
+
+	\mathit{Receive}
+	\frac{\theta,e \arro{\ms{rec}(\kappa,\overline{cl_n})}\theta',e'~~~\ms{matchrec}(\theta,\overline{cl_n},q)=(\theta_i,e_i,v)}
+	{\Gamma;\l p,\theta,e,q\r \comp \Pi \hoo \Gamma;\l p,\theta'\theta_i,e'\{\kappa \mapsto e_i\},q \sslash v \r \comp \Pi}\\[4ex]
+
+  	\displaystyle
+
+	\mathit{Spawn}
+	\frac{\theta,e \arro{\ms{spawn}(\kappa,a/n,[\overline{v_n}])}\theta',e'~~~p'\text{ is a fresh pid}}
+	{\Gamma;\l p,\theta,e,q\r \comp \Pi \hoo \Gamma;\l p,\theta',e'\{\kappa \mapsto p'\},q \r \comp \l p', \nill, id,\ms{apply}~a/n(\overline{v_n}, \nill \r \comp \Pi }\\[4ex]
+	
+	\displaystyle
+
+	\mathit{Self}
+	\frac{\theta,e \arro{\ms{self}(\kappa)}\theta',e'}
+	{\Gamma;\l p,\theta,e,q\r \comp \Pi \hoo \Gamma;\l p,\theta',e'\{\kappa \mapsto p\},q \r \comp \Pi }\\[4ex]
+	
+	\displaystyle
+
+	\mathit{Sched}
+	\frac{}
+	{\Gamma\cup \set{\rfpair{p}{v}} ;\l p,\theta,e,q\r \comp \Pi \hoo \Gamma;\l p,\theta,e, v:q \r \comp \Pi }\\[4ex]
+	
+	\end{array}
+  $
+\caption{Standard semantics: system rules.}
+\label{fig:sys-semantics}
+\end{figure}
+
+Fig.~\ref{fig:sys-semantics} depicts the rules of the system semantics, which is
+defined in terms of the relation $\hoo$. The
+system semantics defines the behavior of the system, here intended as the
+global mailbox $\Gamma$ and the pool of processes $\Pi$. Each rule defines how
+the system can transit from one state to another in a forward manner.
+
+%Here, we can see how in rule $Spawn, Self$ and $Receive$ the system semantics replaces $\kappa$, the 'future-like'
+%variable, with its proper value.
+
+We can see how the system semantics relies on
+the expression semantics for the evaluation of the concurrent expressions and
+then how it performs the corresponding action. The corresponding action
+can be the substitution of $\kappa$ with its actual value, the application of
+the appropriate
+side-effect or both.
+
+Let us consider the case of rule $Spawn$. In
+rule $Spawn$ the system level relies on the expression level to evaluate the
+spawn expression, then it chooses a fresh identifier $p$ as the pid of the new process, replaces
+$\kappa$ with $p$ and lastly adds to $\Pi$ the new process.
+
+Now, let us discuss more in detail rule $Receive$, as it may not be of immediate
+understanding. The receive construct traverses the queue of messages, from the
+oldest to the newest, searching for the first message that matches one of the
+$n$ clauses. If one is found then the receive evaluates to the expression
+relative to the matching clause, otherwise the process suspends itself.
+Here, the auxiliary function $\ms{matchrec}$, given an environment, a list of
+clauses, and a queue of messages, searches for the first message $v$ that
+matches one of the patterns. When one is found it returns the
+corresponding environment and expression alongside with the matched message $v$.
+Then, the system semantics updates the process' environment with the new
+variables introduced by the selected branch, replaces $\kappa$ with the
+corresponding expression, and removes $v$ from the process' queue.
+
+Then, rule $Send$ and rule $Sched$ are the rules that respectively send and schedule a
+message. More precisely, we apply rule $Send$ every time that a process performs a $\ms{send}$ and, as a
+side-effect, we update the value of $\Gamma$ by adding the pair $(p'', m)$, where
+$p''$ is the pid of the receiver and $m$ is the message. Whereas, by applying rule
+$Sched$ nondeterministically we remove a message from $\Gamma$ and we add it to
+its receiver queue. The fact that rule $Sched$ chooses the pair
+nondeterministically allows to model every possible interleaving of the
+messages.
+
+Finally, rule $Seq$ denotes a silent operation without side-effects and $Self$
+the call of function $\ms{self}$ by process $p$.
+
+\subsection{A reversible semantics}\label{app:rev-sem} 
+
+\begin{figure}[t]
+\centering
+\small
+  $
+  \begin{array}{r@{~~}c}
+  	
+  (\mathit{Seq}) & \displaystyle
+  \frac{\theta,e \arro{\tau}\theta',e'}{\Gamma; \tuple{p, h, \theta,e, q} \comp \Pi \rh \Gamma; \tuple{p, \tau(\theta,e): h, \theta',e', q} \comp \Pi}\\[4ex]
+  
+  (\mathit{Send}) & \displaystyle
+  \frac{\theta,e \arro{\ms{send}(p'',v)}\theta',e'~~~\lambda~\text{is a fresh identifier}} 
+  {\Gamma; \tuple{p, h, \theta,e, q} \comp \Pi \rh \Gamma\cup\rfpair{p''}{\{\lambda,v\} }; \tuple{p, \ms{send}(\theta,e,p'',\{\lambda,v\}): h, \theta',e', q} \comp \Pi}\\[4ex]
+ 
+  (\mathit{Receive}) & \displaystyle
+  \frac{\theta,e \arro{\ms{rec}(\kappa,\overline{cl_n})}\theta',e'~~\ms{matchrec}(\theta,\overline{cl_n},q=(\theta_i,e_i,\{\lambda,v\})} 
+  {\Gamma; \tuple{p, h, \theta,e, q} \comp \Pi \rh \Gamma; \tuple{p, \ms{rec}(\theta,e,\{\lambda,v\},q): h, \theta'\theta_i,e'\{\kappa \mapsto e_i\}, q \sslash \set{\lambda,v}} \comp \Pi}\\[4ex]
+   
+  (\mathit{Spawn}) & {\displaystyle
+  \frac{\theta,e \arro{\ms{spawn}(\kappa, a/n, [\overline{v_n}])}\theta',e'~~~p'\text{ is a fresh identifier}}
+  {\begin{array}{l@{~}l}
+   	\Gamma; \tuple{p, h, \theta,e, q} \comp \Pi \rh \Gamma; \tuple{p, \ms{spawn}(\theta,e, p'): h, \theta',e'\{\kappa \mapsto p'\}, q}\\
+  	  \hspace{25ex}\comp \tuple{p', \nill, id,\ms{apply}~a/n (\overline{v_n}), \nill } \comp \Pi
+  	\end{array}
+  	}}\\[6ex]
+  
+	(\mathit{Self}) & \displaystyle
+  	\frac{\theta,e \arro{\ms{self}(\kappa)}\theta',e'}
+  	{\Gamma; \tuple{p, h, \theta,e, q} \comp \Pi \rh \Gamma; \tuple{p, \ms{self}(\theta,e): h, \theta',e'\set{\kappa \mapsto p}, q} \comp \Pi}\\[4ex]
+    
+    (\mathit{Sched}) & \displaystyle
+  	\frac{}
+  	{\Gamma\cup\set{\rfpair{p}{\set{\lambda,v}}}; \tuple{p, h, \theta, e, q} \comp \Pi \rh \Gamma; \tuple{p,h, \theta,e, \set{\lambda,v}:q} \comp \Pi}\\[4ex]
+    \end{array}
+  $
+\caption{Forward reversible semantics.}
+\label{fig:fwd-semantics}
+\end{figure}
+
+The forward reversible semantics, depicted in Fig.~\ref{fig:fwd-semantics} and
+defined by the relation $\rh$,
+is the natural extension of the system semantics where each process has been
+embedded with a history of its previous configurations. More precisely, each time that a process performs a
+forward step the current configuration and eventually additional pieces of
+information are saved in the history, then the process transits in
+a new state.
+
+The history serves two purposes: it is used to check that all the consequences
+of the action, if any, have been undone and to travel back in the process' computation.
+
+The only other difference of the forward reversible semantics, apart from the
+history, w.r.t. the system semantics is that here each message is uniquely identified
+by an id, usually denoted by $\lambda$ or $\lambda'$. The need to uniquely
+identify each message arise from the necessity to identify a precise point in
+the past of a process' computation.
+
+Let us consider the following example to clarify such need.
+
+\begin{example}
+   Let us consider three processes $p_1,p_2$ and $p_3$; $p_1$ sends a
+   message $v$ to  $p_2$, then $p_3$ sends the same message $v$ to $p_2$. Now,
+   if we desire to undo the send of message $v$ sent by $p_1$ we first need to
+   undo the $\ms{receive}$ of $p_2$ and to do so we need to be able to precisely identify the moment in $p_2$'s computation when it received the message. If the only information available in the process' history is the content of the message it would be impossible to determine who is the sender of two identical messages. 
+ \end{example}
+
+The problem described in the previous example does not arise if each message is
+paired with a unique identifier. Indeed, in that case it is sufficient to undo
+the computation of the receiver up to the receive of the message with the
+desired identifier. We refer to \cite{LaneseNPV18} for an even more precise discussion
+of the problem.
+
+\begin{figure}[t]
+\centering
+\small
+  $
+  \begin{array}{r@{~~}c}
+  	
+  (\mathit{\overline{Seq}}) & \displaystyle
+  \Gamma; \l p, \tau (\theta,e):h,\theta',e',q \r \comp \Pi 
+  	\lh
+  \Gamma; \l p, h,\theta,e,q \r \comp \Pi \\[4ex] 
+  
+  (\mathit{\overline{Send}}) & \displaystyle
+  \Gamma \cup \{(p'',\set{\lambda, v})\}; \l p, \ms{send}(\theta,e,p'',\set{\lambda,v}):h,\theta',e',q \r \comp \Pi 
+  	\lh
+  \Gamma; \l p, h,\theta,e,q \r \comp \Pi \\[4ex] 
+ 
+  (\mathit{\overline{Receive}}) & \displaystyle
+  \Gamma; \l p, \ms{rec}(\theta,e,\set{\lambda,v},q):h,\theta',e',q \sslash \set{\lambda,v} \r \comp \Pi 
+  	\lh
+  \Gamma; \l p, h,\theta,e,q \r \comp \Pi \\[4ex] 
+   
+  (\mathit{\overline{Spawn}}) & {\displaystyle
+    \Gamma; \l p, \ms{spawn}(\theta,e,p'):h,\theta',e',q \r \comp \l p', \nill, id,e'',\nill \r \comp \Pi 
+  	\lh
+  \Gamma; \l p, h,\theta,e,q \r \comp \Pi} \\[4ex] 
+  
+  (\mathit{\overline{Self}}) & \displaystyle
+  \Gamma; \l p, \ms{self}(\theta,e):h,\theta',e',q \r \comp \Pi 
+  	\lh
+  \Gamma; \l p, h,\theta,e,q \r \comp \Pi \\[4ex] 
+    
+  (\mathit{\overline{Sched}}) & \displaystyle
+  {\begin{array}{l@{~}l}
+   	\Gamma; \l p, h,\theta,e,\set{\lambda,v}:q \r \comp \Pi 
+  	\lh
+  \Gamma\cup \set{(p,\set{\lambda,v})} ; \l p, h,\theta,e,q \r \comp \Pi \\
+  	  \hskip 8em \text{if the topmost } \ms{rec}(...) \text{ item in h (if any) has the}\\
+  	  \hskip 8em \text{form } \ms{rec}(\theta',e',\{\lambda',v'\},q') \text{ with } q'\sslash \set{\lambda',v'}\not= \set{\lambda,v}:q
+  	\end{array}}\\[4ex] 
+  \end{array}
+  $
+\caption{Backward reversible semantics.}
+\label{fig:bwd-semantics}
+\end{figure}
+
+
+The uncontrolled backward semantics is depicted in Fig.~\ref{fig:bwd-semantics}
+and defined in terms of the relation $\lh$. The backward semantics restores
+previous states of a process' computation if all of the consequences of the
+target action have been undone. In some cases, e.g., rule $\ol{Seq}$, since the
+action does not have conquences we can simply restore the computation without
+performing any checks. In other cases, e.g., rule $\ol{Spawn}$, before undoing a step
+we need to perform additional checks.
+
+Rules $\ol{Receive}$ and $\ol{Sched}$ are the most complicated cases of the semantics,
+hence let us discuss them in detail. Rules $\ol{Sched}$ and $\ol{Receive}$ do
+not commute both with each other and with them self.
+In other words, to preserve the semantics of the system we must undo them in
+the same exact order they happened. The fact that two rules
+$\ol{Sched}$ do not commute is ensured by the fact that we undo a $\ol{Sched}$ only
+when the target message is on top of the queue $q$, hence $q$ is forcing the order. Rules $\ol{Receive}$ do not
+commute because we can undo a $Receive$ only when the corresponding item is on
+top of the process history and the queue is the same as it was when the forward
+step has been performed. Finally, rules $ol{Sched}$ and $\ol{Receive}$ do not commute
+thanks to the side condition of rule $\ol{Sched}$.
+
+The other rules are more straightforward. Rule $\ol{Send}$ can be applied when
+the message is in $\Gamma$ because in this case we are sure that each of its
+consequences has been undone already. Rule $\ol{Spawn}$ can be applied when the child
+has an empty history. Finally, rules $\ol{Seq}$ and $\ol{Self}$ can always be applied since they never have
+consequences.
+
+\subsection{A distributed reversible semantics}\label{app:dist-rev-sem}
+
+\begin{figure}
+\small
+\hspace{-1.25cm}
+  $
+   \begin{array}{r@{}c}
+  	
+  (\mathit{Seq}) & {\displaystyle
+  \frac{\theta,e \arro{\tau}\theta',e'}{\Gamma; \tuple{nid, p, h, \theta,e, q} \comp \Pi; \Omega \rh \Gamma; \tuple{nid, p, \tau(\theta,e): h, \theta',e', q} \comp \Pi; \Omega}}\\[4ex]
+  
+  (\mathit{Send}) & 
+  {\begin{array}{c} \displaystyle
+  \frac{\theta,e \arro{\ms{send}(p'',v)}\theta',e'~~~\lambda~\text{is a fresh identifier}} 
+  {\Gamma; \tuple{nid, p, h, \theta,e, q} \comp \Pi; \Omega}\\ \rh \Gamma\cup \{\rfpair{p''}{\{\lambda,v\}}\}; \tuple{nid, p, \ms{send}(\theta,e,p'',\{\lambda,v\}): h, \theta',e', q} \comp \Pi; \Omega  
+  \end{array}}\\[4ex]
+ 
+  (\mathit{Receive}) & 
+  {\begin{array}{c} \displaystyle
+  \frac{\theta,e \arro{\ms{rec}(\kappa,\overline{cl_n})}\theta',e'~~\ms{matchrec}(\theta,\overline{cl_n},q)=(\theta_i,e_i,\{\lambda,v\})} 
+  {\Gamma; \tuple{nid, p, h, \theta,e, q} \comp \Pi; \Omega}\\ \rh \Gamma; \tuple{nid, p, \ms{rec}(\theta,e,\{\lambda,v\},q): h,\theta'\theta_i,e'\{\kappa \mapsto e_i\},q \sslash \set{\lambda,v}} \comp \Pi; \Omega
+    \end{array}}\\[6ex]
+     
+	(\mathit{Self}) & \displaystyle
+  	\frac{\theta,e \arro{\ms{self}(\kappa)}\theta',e'}
+  	{\Gamma; \tuple{nid, p, h, \theta,e, q} \comp \Pi; \Omega \rh \Gamma; \tuple{nid, p, \ms{self}(\theta,e): h, \theta',e'\set{\kappa \mapsto p}, q} \comp \Pi; \Omega}\\[4ex]
+    
+    (\mathit{Sched}) & \displaystyle
+  	\frac{}
+  	{\Gamma\cup\set{\rfpair{p}{\set{\lambda,v}}}; \tuple{nid, p, h, \theta,e, q} \comp \Pi; \Omega \rh \Gamma; \tuple{nid, p,h, \theta,e, \set{\lambda,v}:q} \comp \Pi; \Omega}\\[4ex]
+	\end{array}
+  $
+  \caption{Missing rules of the extended forward reversible semantics}
+  \label{fig:ex-fwd-semantics2}
+\end{figure}
+
+\begin{figure}
+\small
+\hspace{-0.8cm}
+  $
+  \begin{array}{r@{~~}c}
+  	
+  (\mathit{\overline{Seq}}) & \displaystyle
+  \Gamma; \l nid, p, \tau (\theta,e):h,\theta',e',q \r \comp \Pi; \Omega 
+  	\lh_{p,\ms{seq},\{s\}}
+  \Gamma; \l nid, p, h,\theta,e,q \r \comp \Pi; \Omega \\[4ex] 
+  
+  (\mathit{\overline{Send}}) & \displaystyle
+  \begin{array}{c}
+  	\Gamma \cup \{(p'',\set{\lambda, v})\}; \l nid, p, \ms{send}(\theta,e,p'',\set{\lambda,v}):h,\theta',e',q \r \comp \Pi; \Omega\\ 
+  	\hskip 6em 
+  	\lh_{p,\ms{send}(\lambda),\{s,\lambda^\Uparrow\}} 
+  	\Gamma; \l nid, p, h,\theta,e,q \r \comp \Pi; \Omega 
+  \end{array}\\[4ex] 
+ 
+  (\mathit{\overline{Receive}}) & \displaystyle
+  \begin{array}{c}
+  	\Gamma; \l nid, p, \ms{rec}(\theta,e,\set{\lambda,v},q):h,\theta',e',q \sslash \set{\lambda,v} \r \comp \Pi; \Omega \\
+  	\lh_{p,\ms{rec}(\lambda),\{s,\lambda^\Downarrow\}}
+  \Gamma; \l nid, p, h,\theta,e,q \r \comp \Pi; \Omega
+  \end{array}\\[4ex] 
+   
+  (\mathit{\overline{Self}}) & \displaystyle
+  \Gamma; \l nid, p, \ms{self}(\theta,e):h,\theta',e',q \r \comp \Pi ; \Omega
+  	\lh_{p,\ms{self},\{s\}}
+  \Gamma; \l nid, p, h,\theta,e,q \r \comp \Pi; \Omega \\[4ex] 
+  
+  (\mathit{\overline{Sched}}) & \displaystyle
+  {\begin{array}{c@{~}c}
+   	\Gamma; \l nid, p, h,\theta,e,\set{\lambda,v}:q \r \comp \Pi; \Omega\\ 
+  	\lh_{p,\ms{sched}(\lambda),\{s,\lambda^{sched}\}}
+  \Gamma\cup \set{(p,\set{\lambda,v})} ; \l nid, p, h,\theta,e,q \r \comp \Pi;\Omega \\
+  	  \text{if the topmost } \ms{rec}(...) \text{ item in h (if any) has the}\\
+  	  \text{form } \ms{rec}(\theta',e',\{\lambda',v'\},q') \text{ with } q'\sslash \set{\lambda',v'}\not= \set{\lambda,v}:q
+  	\end{array}}\\[4ex] 
+  \end{array}
+  $
+\caption{Missing rules of the extended backward reversible semantics}
+\label{fig:ex-bwd-semantics2}
+\end{figure}
+
+Fig.~\ref{fig:ex-fwd-semantics2} and Fig.~\ref{fig:ex-bwd-semantics2} show the
+missing rules of the semantics depicted in Fig.~\ref{fig:ex-fwd-semantics1} and Fig.~\ref{fig:ex-bwd-semantics1}.
+The behavior defined by the rules depicted in the two figures is the same as the
+one described in Section~\ref{app:rev-sem}.
+
+
+
+\section{Proofs}\label{app:proofs}
+This section contains sketches of the proofs of the main results of this paper,
+it is intended as a help for the reviewer providing auxiliary information
+locally. If the
+paper will be accepted it will be removed and substituted with the appropriate
+references.  
+
+
+\looplemma
+
+\begin{proof}
+  The proof that a forward transition can be undone follows by rule inspection. The other direction relies on the restriction to reachable systems: consider the process undoing the action. Since the system is reachable, restoring the memory item would put us back in a state where the undone action can be performed again (if the system would not be reachable the memory item would be arbitrary, hence there would not be such a guarantee), as desired. Again, this can be proved by rule inspection.
+\end{proof}
+
+\rollbacksoundness
+
+\begin{proof}
+The rollback semantics is either executing backward steps using the backward
+semantics or executing administrative steps (i.e., pushing new requests on top of
+$\Psi$), which do not alter the state of the system. The thesis follow.
+\end{proof}
+
+\end{document}
