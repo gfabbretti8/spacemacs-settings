@@ -560,6 +560,7 @@ before packages are loaded."
   (add-hook 'prog-mode-hook 'flyspell-prog-mode)
   (add-hook 'text-mode-hook 'visual-line-mode)
 
+  (setq-default erlang-indent-level 2)
 
  ;; turns on numbers line mode while in programming mode
   (add-hook 'prog-mode-hook 'linum-mode)
