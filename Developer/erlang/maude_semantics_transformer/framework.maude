@@ -1,8 +1,0 @@
-
-
-
-load helper.maude .
-load code-manipulation.maude .
-load loop.maude .
-
-loop init .
